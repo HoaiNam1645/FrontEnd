@@ -2,18 +2,19 @@
   "name": "grabit-next",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
+"scripts": {
     "dev": "next dev",
     "build:netlify": "next build",
     "build": "cross-env NODE_OPTIONS='--max-old-space-size=14096' next build",
     "start": "next start",
     "lint": "next lint"
-  },
+},
   "dependencies": {
     "@emotion/react": "^11.11.4",
     "@netlify/plugin-nextjs": "^5.9.4",
     "@reduxjs/toolkit": "^2.5.1",
     "apexcharts": "^4.4.0",
+    "axios": "^1.8.3",
     "bootstrap": "^5.3.3",
     "font-awesome-icons": "^1.6.0",
     "formik": "^2.4.6",

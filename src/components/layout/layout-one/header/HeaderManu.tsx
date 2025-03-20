@@ -441,7 +441,7 @@ function HeaderManu() {
             </div>
             {/* <!-- Main Menu End --> */}
 
-            <CurrentLocation />
+            {/* <CurrentLocation /> */}
           </div>
         </div>
       </div>

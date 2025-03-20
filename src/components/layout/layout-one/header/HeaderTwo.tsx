@@ -45,8 +45,9 @@ function HeaderTwo({ cartItems, wishlistItems }) {
 
   const handleLogout = () => {
     localStorage.removeItem("login_user");
+    localStorage.removeItem("login_token");
     dispatch(logout());
-    router.push("/");
+    router.push("/login/");
   };
 
   return (

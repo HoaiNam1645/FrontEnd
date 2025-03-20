@@ -9,12 +9,10 @@ import HeroSlider from "@/components/hero/HeroSlider";
 import Services from "@/components/service/Services";
 import Trending from "@/components/trending/Trending";
 import GroceryArrials from "@/components/arrivals/GroceryArrials";
-import NewsletterModal from "@/components/model/NewsletterModal";
 
 const page = () => {
     return (
         <>
-            <NewsletterModal />
             <HeroSlider />
             <Category />
             <Deal />

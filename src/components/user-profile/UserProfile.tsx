@@ -1,55 +1,69 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Col, Row } from "react-bootstrap";
-import { getRegistrationData } from "../login/RegisterPage";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import VendorSidebar from "../vendor-sidebar/VendorSidebar";
+import axios from "axios";
+import { showErrorToast } from "../toast-popup/Toastify";
 
-export interface RegistrationData {
-  firstName: string;
-  lastName: string;
+export interface UserData {
+  _id: string;
+  name: string;
+  fullName: string;
   email: string;
-  phoneNumber: string;
+  phone: string;
   address: string;
-  city: string;
-  postCode: string;
-  country: string;
-  state: string;
   profilePhoto?: string;
-  description: string;
+  description?: string;
 }
 
 const UserProfile = () => {
-  const [userData, setUserData] = useState<RegistrationData | null>(null);
-  const login = useSelector(
-    (state: RootState) => state.registration.isAuthenticated
-  );
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const loginUserData = localStorage.getItem("login_user");
+  const idUser = loginUserData ? JSON.parse(loginUserData).id : null;
+  const login = useSelector((state: RootState) => state.registration.isAuthenticated);
   const router = useRouter();
 
   useEffect(() => {
-    if (login) {
-      const data = getRegistrationData();
-      if (data.length > 0) {
-        setUserData(data[data.length - 1]);
+    const fetchUserData = async () => {
+      try {
+        if (!idUser) {
+          throw new Error("Không tìm thấy ID người dùng");
+        }
+        const response = await axios.get(`http://localhost:5000/api/users/get/${idUser}`);
+        setUserData(response.data.data);
+      } catch (error: any) {
+        showErrorToast(error.response?.data?.message || "Không thể tải thông tin người dùng");
+      } finally {
+        setLoading(false);
       }
+    };
+
+    if (login) {
+      fetchUserData();
     }
-  }, [login, router]);
+  }, [login]);
 
   if (!login) {
     return (
       <div className="container">
         <p>
-          Please <a href="/login">login</a> or <a href="/register">register</a>{" "}
-          to view this page.
+          Vui lòng <a href="/login">đăng nhập</a> hoặc <a href="/register">đăng ký</a>{" "}
+          để xem trang này.
         </p>
       </div>
     );
   }
 
+  if (loading) {
+    return <div>Đang tải...</div>;
+  }
+
   if (!userData) {
-    return <div>Loading...</div>;
+    return <div>Không tìm thấy thông tin người dùng</div>;
   }
 
   const handleSubmit = (e: any) => {
@@ -81,7 +95,7 @@ const UserProfile = () => {
                         className=""
                         type="submit"
                       >
-                        Edit <i className="fi fi-rr-pencil"></i>
+                        Chỉnh sửa <i className="fi fi-rr-pencil"></i>
                       </button>
                     </span>
                     <div className="detail">
@@ -94,10 +108,8 @@ const UserProfile = () => {
                         alt="vendor"
                       />
                       <div className="v-detail">
-                        <h5>
-                          {userData.firstName} {userData.lastName}
-                        </h5>
-                        <p>{userData.description}</p>
+                        <h5>{userData.fullName}</h5>
+                        <p>{userData.description || "Chưa có mô tả"}</p>
                       </div>
                     </div>
                   </div>
@@ -105,41 +117,50 @@ const UserProfile = () => {
               </Row>
               <div className="gi-vendor-profile-card gi-vendor-profile-card">
                 <div className="gi-vendor-card-body">
-                  <div className="gi-vender-about-block">
-                    <h5>Account Information</h5>
+                  <div className="gi-vender-about-block" style={{textAlign: "center"}}>
+                    <h5>ACCOUNT INFORMATION</h5>
                   </div>
                   <Row className="mb-minus-24px">
                     <div className="col-md-6 col-sm-12 mb-24">
                       <div className="gi-vendor-detail-block">
-                        <h6>E-mail address</h6>
+                        <h6>Full name</h6>
                         <ul>
                           <li>
-                            <strong>Email 1 : </strong>
-                            {userData.email}
+                            <strong>Full name: </strong>
+                            {userData.fullName}
                           </li>
-                          {/* <li><strong>Email 2 : </strong>support2@exapmle.com</li> */}
                         </ul>
                       </div>
                     </div>
                     <div className="col-md-6 col-sm-12 mb-24">
                       <div className="gi-vendor-detail-block">
-                        <h6>Contact nubmer</h6>
+                        <h6>Phone Number</h6>
                         <ul>
                           <li>
-                            <strong>Phone Nubmer 1 : </strong>
-                            {userData.phoneNumber}
+                            <strong>Phone Number: </strong>
+                            {userData.phone}
                           </li>
-                          {/* <li><strong>Phone Nubmer 2 : </strong>(123) 123 456 7890</li> */}
                         </ul>
                       </div>
                     </div>
-                    <div className="col-md-12 col-sm-12 mb-24">
+                    <div className="col-md-6 col-sm-12 mb-24">
+                      <div className="gi-vendor-detail-block">
+                        <h6>Email address</h6>
+                        <ul>
+                          <li>
+                            <strong>Email: </strong>
+                            {userData.email}
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="col-md-6 col-sm-12 mb-24">
                       <div className="gi-vendor-detail-block">
                         <h6>Address</h6>
                         <ul>
                           <li>
-                            <strong>Home : </strong>
-                            {userData.address}.
+                            <strong>Address: </strong>
+                            {userData.address}
                           </li>
                         </ul>
                       </div>

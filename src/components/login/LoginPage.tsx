@@ -8,6 +8,7 @@ import { showErrorToast, showSuccessToast } from "../toast-popup/Toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { login } from "@/store/reducers/registrationSlice";
 import { RootState } from "@/store";
+import axios from "axios";
 
 interface Registration {
   firstName: string;
@@ -47,25 +48,49 @@ const LoginPage = () => {
     }
   }, [isAuthenticated, router]);
 
-  const handleLogin = (e: any) => {
+
+
+  const handleLogin = async (e: any) => {
     e.preventDefault();
 
     const form = e.currentTarget;
     if (form.checkValidity() === false) {
       e.stopPropagation();
+      return;
     }
 
-    const foundUser = registrations.find(
-      (user) => user.email === email && user.password === password
-    );
+    try {
+      const response = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password,
+      });
 
-    if (foundUser) {
-      const userData = { uid: foundUser.uid, email, password };
-      localStorage.setItem("login_user", JSON.stringify(userData));
-      dispatch(login(foundUser));
-      showSuccessToast("User Login Success");
-    } else {
-      showErrorToast("Invalid email or password");
+      console.log("Response status:", response.status);
+      console.log("Response data:", response.data.data);
+
+      // Kiểm tra nếu API trả về thành công
+      if (response.data.success && response.data.data) {
+        const { token, user } = response.data.data;
+
+        if (!token || !user) {
+          throw new Error("Dữ liệu trả về không hợp lệ");
+        }
+
+        // Lưu token & user vào localStorage
+        localStorage.setItem("login_token", token);
+        localStorage.setItem("login_user", JSON.stringify(user));
+
+        // Dispatch action đăng nhập
+        dispatch(login(user));
+
+        showSuccessToast("Đăng nhập thành công");
+        router.push("/home/");
+      } else {
+        throw new Error("Đăng nhập thất bại");
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      showErrorToast("Đăng nhập thất bại");
     }
 
     setValidated(true);
