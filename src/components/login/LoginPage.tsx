@@ -85,12 +85,10 @@ const LoginPage = () => {
 
         showSuccessToast("Đăng nhập thành công");
         router.push("/home/");
-      } else {
-        throw new Error("Đăng nhập thất bại");
       }
     } catch (error: any) {
-      console.error("Login error:", error);
-      showErrorToast("Đăng nhập thất bại");
+      console.error("Login error:", error.response.data.message);
+      showErrorToast(error.response.data.message);
     }
 
     setValidated(true);

@@ -27,6 +27,7 @@ export const showSuccessToast = (message: string, options?: ToastOptions) => {
 };
 
 export const showErrorToast = (message: string, options?: ToastOptions) => {
+  console.log("fhdhf");
   toast.error(message, options);
 };
 
