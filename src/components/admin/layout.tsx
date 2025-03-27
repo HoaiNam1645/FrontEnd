@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { FaHome, FaChartLine, FaUsers, FaUserShield, FaCog, FaBell, FaList, FaBox } from "react-icons/fa";
+import CategoryDropdown from "./CategoryDropdown";
 import "./admin.css";
 
 export default function AdminLayout({
@@ -11,7 +12,6 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -47,10 +47,7 @@ export default function AdminLayout({
               <FaUsers />
               <span>Người Dùng</span>
             </Link>
-            <Link href="/category" className="nav-link">
-              <FaList />
-              <span>Danh Mục</span>
-            </Link>
+            <CategoryDropdown />
             <Link href="/product" className="nav-link">
               <FaBox />
               <span>Sản Phẩm</span>
@@ -59,18 +56,6 @@ export default function AdminLayout({
         </div>
 
         <div className="nav-right">
-          <div className="search-container">
-            <button 
-              className="icon-btn search-toggle"
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
-            >
-              <i className="fas fa-search"></i>
-            </button>
-            <div className={`search-box ${isSearchOpen ? 'active' : ''}`}>
-              <input type="text" placeholder="Tìm kiếm..." />
-            </div>
-          </div>
-
           <div className="nav-actions">
             <div className="notification-dropdown">
               <button 

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FaEdit, FaTrash, FaPlus } from "react-icons/fa";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import "./category.css";
 import axios from "axios";
 
@@ -18,6 +20,7 @@ const listCategories = async () => {
     return response.data.data;
   } catch (error) {
     console.error("Lỗi khi lấy danh sách danh mục:", error);
+    toast.error("Có lỗi xảy ra khi lấy danh sách danh mục");
   }
 }
 
@@ -38,15 +41,29 @@ export default function CategoryList() {
       try {
         await axios.delete(`http://localhost:5000/api/categories/delete/${_id}`);
         setCategories(categories.filter(category => category._id !== _id));
-        alert('Xóa danh mục thành công!');
+        toast.success('Xóa danh mục thành công!');
       } catch (error) {
         console.error('Lỗi khi xóa danh mục:', error);
-        alert('Có lỗi xảy ra khi xóa danh mục!');
+        toast.error('Có lỗi xảy ra khi xóa danh mục!');
       }
     }
   };
 
   return (
+    <>
+          <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        style={{ marginTop: '60px' }}
+      />
     <div className="category-list-container">
       <div className="page-header">
         <h1>Quản Lý Danh Mục</h1>
@@ -80,7 +97,7 @@ export default function CategoryList() {
               <tbody>
                 {categories
                   .filter((category) =>
-                    category.name
+                    category.name.toLowerCase().includes(searchTerm.toLowerCase())
                   )
                   .map((category) => (
                     <tr key={category._id}>
@@ -114,5 +131,6 @@ export default function CategoryList() {
         </div>
       </div>
     </div>
+    </>
   );
 } 
