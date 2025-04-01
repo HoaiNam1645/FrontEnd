@@ -3,8 +3,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ShopProductItem from "../product-item/ShopProductItem";
 import { Col, Row } from "react-bootstrap";
 import SidebarArea from "./sidebar-area/SidebarArea";
-import useSWR from "swr";
-import fetcher from "../fetcher-api/Fetcher";
 import Spinner from "../button/Spinner";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
@@ -18,6 +16,8 @@ import {
   setSortOption,
 } from "@/store/reducers/filterReducer";
 import Paginantion from "../paginantion/Paginantion";
+import { productService, Product } from "@/services/productService";
+import { useSearchParams } from "next/navigation";
 
 const Shop = ({
   xl = 4,
@@ -29,7 +29,12 @@ const Shop = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isGridView, setIsGridView] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const dispatch = useDispatch();
+  const searchParams = useSearchParams();
+  const categoryId = searchParams.get("categoryId");
   const {
     selectedCategory,
     selectedWeight,
@@ -43,41 +48,91 @@ const Shop = ({
   } = useSelector((state: RootState) => state.filter);
   const itemsPerPage = 12;
 
-  const postData = useMemo(
-    () => ({
-      searchTerm,
-      page: currentPage,
-      limit: itemsPerPage,
-      sortOption,
-      selectedCategory,
-      minPrice,
-      maxPrice,
-      range,
-      selectedWeight,
-      selectedColor,
-      selectedTags,
-    }),
-    [
-      searchTerm,
-      currentPage,
-      itemsPerPage,
-      sortOption,
-      selectedCategory,
-      minPrice,
-      maxPrice,
-      range,
-      selectedWeight,
-      selectedColor,
-      selectedTags,
-    ]
-  );
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const data = await productService.getAllProducts();
+        setProducts(data);
+      } catch (err) {
+        setError("Không thể tải sản phẩm");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const { data, error } = useSWR(
-    ["/api/shopitem", postData],
-    ([url, postData]) => fetcher(url, postData)
-  );
+    fetchProducts();
+  }, []);
+ 
+  useEffect(() => {
+    if (categoryId && categoryId !== "67e666ae0a4c7a283acd2a18") {
+      dispatch(setSelectedCategory([categoryId]));
+    } else if (categoryId && categoryId === "67e666ae0a4c7a283acd2a18") {
+      dispatch(setSelectedCategory([]));
+    } else {
+      dispatch(setSelectedCategory([]));
+    }
+  }, [categoryId, dispatch]);
 
-  const toggleView = (isGrid: any) => {
+  const filteredProducts = useMemo(() => {
+    let filtered = [...products];
+
+    // Lọc theo tìm kiếm
+    if (searchTerm) {
+      filtered = filtered.filter(product => 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Lọc theo giá
+    if (minPrice && maxPrice) {
+      filtered = filtered.filter(product => 
+        product.price >= minPrice && product.price <= maxPrice
+      );
+    }
+
+    // Lọc theo danh mục (chỉ khi có categoryId và không phải là categoryId đặc biệt)
+    if (categoryId && categoryId !== "67e666ae0a4c7a283acd2a18") {
+      filtered = filtered.filter(product =>
+        product.categoryId === categoryId
+      );
+    } else if (selectedCategory.length > 0) {
+      filtered = filtered.filter(product =>
+        selectedCategory.includes(product.categoryId)
+      );
+    }
+
+    // Sắp xếp
+    if (sortOption) {
+      switch (sortOption) {
+        case "1": // Position
+          break;
+        case "2": // Relevance
+          break;
+        case "3": // Name, A to Z
+          filtered.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case "4": // Name, Z to A
+          filtered.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        case "5": // Price, low to high
+          filtered.sort((a, b) => a.price - b.price);
+          break;
+        case "6": // Price, high to low
+          filtered.sort((a, b) => b.price - a.price);
+          break;
+      }
+    }
+
+    return filtered;
+  }, [products, searchTerm, minPrice, maxPrice, selectedCategory, sortOption, categoryId]);
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+
+  const toggleView = (isGrid: boolean) => {
     setIsGridView(isGrid);
   };
 
@@ -102,7 +157,7 @@ const Shop = ({
     [dispatch]
   );
 
-  const handleCategoryChange = (category) => {
+  const handleCategoryChange = (category: string) => {
     const updatedCategory = selectedCategory.includes(category)
       ? selectedCategory.filter((cat) => cat !== category)
       : [...selectedCategory, category];
@@ -110,7 +165,7 @@ const Shop = ({
     setCurrentPage(1);
   };
 
-  const handleWeightChange = (weight) => {
+  const handleWeightChange = (weight: string) => {
     const updatedweight = selectedWeight.includes(weight)
       ? selectedWeight.filter((wet) => wet !== weight)
       : [weight];
@@ -118,7 +173,7 @@ const Shop = ({
     setCurrentPage(1);
   };
 
-  const handleColorChange = (color) => {
+  const handleColorChange = (color: string) => {
     const updatedcolor = selectedColor.includes(color)
       ? selectedColor.filter((clr) => clr !== color)
       : [...selectedColor, color];
@@ -126,7 +181,7 @@ const Shop = ({
     setCurrentPage(1);
   };
 
-  const handleTagsChange = (tag) => {
+  const handleTagsChange = (tag: string) => {
     const updatedtag = selectedTags.includes(tag)
       ? selectedTags.filter((tg) => tg !== tag)
       : [...selectedTags, tag];
@@ -138,7 +193,7 @@ const Shop = ({
     setCurrentPage(page);
   };
 
-  if (error) return <div>Failed to load products</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <>
@@ -179,14 +234,14 @@ const Shop = ({
                   defaultValue=""
                 >
                   <option value="" disabled>
-                    Sort by
+                    Sắp xếp theo
                   </option>
-                  <option value="1">Position</option>
-                  <option value="2">Relevance</option>
-                  <option value="3">Name, A to Z</option>
-                  <option value="4">Name, Z to A</option>
-                  <option value="5">Price, low to high</option>
-                  <option value="6">Price, high to low</option>
+                  <option value="1">Vị trí</option>
+                  <option value="2">Liên quan</option>
+                  <option value="3">Tên, A đến Z</option>
+                  <option value="4">Tên, Z đến A</option>
+                  <option value="5">Giá, thấp đến cao</option>
+                  <option value="6">Giá, cao đến thấp</option>
                 </select>
               </div>
             </div>
@@ -194,46 +249,44 @@ const Shop = ({
           {/* <!-- Shop Top End --> */}
 
           {/* <!-- Shop content Start --> */}
-          {!data ? (
-            <>
-              <Spinner />
-            </>
+          {loading ? (
+            <Spinner />
           ) : (
             <div
               className={`shop-pro-content ${isGridView ? "list-view-50" : ""}`}
             >
               <div className={`shop-pro-inner ${list}`}>
                 <Row>
-                  {data?.data.map((item: any, index: any) => (
+                  {paginatedProducts.map((item: Product) => (
                     <ShopProductItem
                       isGridView={isGridView}
                       xl={xl}
                       data={item}
-                      key={index}
+                      key={item._id}
                       isList={isList}
                     />
                   ))}
                 </Row>
               </div>
               {/* <!-- Pagination Start --> */}
-              {!data.data.length ? (
+              {!paginatedProducts.length ? (
                 <div
                   style={{ textAlign: "center" }}
                   className="gi-pro-content cart-pro-title"
                 >
-                  Products is not found.
+                  Không tìm thấy sản phẩm.
                 </div>
               ) : (
                 <div className="gi-pro-pagination">
                   <span>
-                    Showing {(currentPage - 1) * itemsPerPage + 1}-
-                    {Math.min(currentPage * itemsPerPage, data.totalItems)} of{" "}
-                    {data.totalItems} item(s)
+                    Hiển thị {startIndex + 1}-
+                    {Math.min(startIndex + itemsPerPage, filteredProducts.length)} trên{" "}
+                    {filteredProducts.length} sản phẩm
                   </span>
 
                   <Paginantion
                     currentPage={currentPage}
-                    totalPages={data.totalPages}
+                    totalPages={totalPages}
                     onPageChange={handlePageChange}
                   />
                 </div>

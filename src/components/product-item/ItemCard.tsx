@@ -12,25 +12,13 @@ import { showSuccessToast } from "../toast-popup/Toastify";
 import { RootState } from "@/store";
 import { addWishlist, removeWishlist } from "@/store/reducers/wishlistSlice";
 import { addCompare, removeCompareItem } from "@/store/reducers/compareSlice";
+import { Product } from "@/services/productService";
 
-interface Item {
-  id: number;
-  title: string;
-  newPrice: number;
-  waight: string;
-  image: string;
-  imageTwo: string;
-  date: string;
-  status: string;
-  rating: number;
-  oldPrice: number;
-  location: string;
-  brand: string;
-  sku: number;
-  category: string;
-  quantity: number;
+interface ItemCardProps {
+  data: Product;
 }
-const ItemCard = ({ data }: any) => {
+
+const ItemCard = ({ data }: ItemCardProps) => {
   const [show, setShow] = useState(false);
   const dispatch = useDispatch();
   const compareItems = useSelector((state: RootState) => state.compare.compare);
@@ -49,62 +37,59 @@ const ItemCard = ({ data }: any) => {
     }
   }, [dispatch]);
 
-  const handleCart = (data: Item) => {
-    const isItemInCart = cartItems.some((item: Item) => item.id === data.id);
+  const handleCart = (data: Product) => {
+    const isItemInCart = cartItems.some((item) => item._id === data._id);
 
     if (!isItemInCart) {
       dispatch(addItem({ ...data, quantity: 1 }));
-      showSuccessToast("Add product in Cart Successfully!");
+      showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
     } else {
-      const updatedCartItems = cartItems.map((item: Item) =>
-        item.id === data.id
+      const updatedCartItems = cartItems.map((item) =>
+        item._id === data._id
           ? {
               ...item,
-              quantity: item.quantity + 1,
-              price: item.newPrice + data.newPrice,
-            } // Increment quantity and update price
+              quantity: item.quantity + 1
+            }
           : item
       );
       dispatch(updateItemQuantity(updatedCartItems));
-      showSuccessToast("Add product in Cart Successfully!");
+      showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
     }
   };
 
-  const isInWishlist = (data: Item) => {
-    return wishlistItems.some((item: Item) => item.id === data.id);
+  const isInWishlist = (data: Product) => {
+    return wishlistItems.some((item) => item._id === data._id);
   };
 
-  const handleWishlist = (data: Item) => {
+  const handleWishlist = (data: Product) => {
     if (!isInWishlist(data)) {
       dispatch(addWishlist(data));
-      showSuccessToast("Add product in Wishlist Successfully!", {
+      showSuccessToast("Thêm sản phẩm vào danh sách yêu thích thành công!", {
         icon: false,
       });
     } else {
-      dispatch(removeWishlist(data.id));
-      showSuccessToast("Remove product on Wishlist Successfully!", {
+      dispatch(removeWishlist(data._id));
+      showSuccessToast("Xóa sản phẩm khỏi danh sách yêu thích thành công!", {
         icon: false,
       });
-      // showErrorToast("Item already have to wishlist");
     }
   };
 
-  const isInCompare = (data: Item) => {
-    return compareItems.some((item: Item) => item.id === data.id);
+  const isInCompare = (data: Product) => {
+    return compareItems.some((item: Product) => item._id === data._id);
   };
 
-  const handleCompareItem = (data: Item) => {
+  const handleCompareItem = (data: Product) => {
     if (!isInCompare(data)) {
       dispatch(addCompare(data));
-      showSuccessToast(`Add product in Compare list Successfully!`, {
+      showSuccessToast("Thêm sản phẩm vào danh sách so sánh thành công!", {
         icon: false,
       });
     } else {
-      dispatch(removeCompareItem(data.id));
-      showSuccessToast("Remove product on Compare list Successfully!", {
+      dispatch(removeCompareItem(data._id));
+      showSuccessToast("Xóa sản phẩm khỏi danh sách so sánh thành công!", {
         icon: false,
       });
-      // showErrorToast("Item already have to compare list");
     }
   };
 
@@ -114,28 +99,45 @@ const ItemCard = ({ data }: any) => {
 
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
+
   return (
     <>
       <div className="gi-product-content">
         <div className={` gi-product-inner`}>
           <div className="gi-pro-image-outer">
-            <div className="gi-pro-image">
+            <div className="gi-pro-image" style={{ 
+              width: '100%',
+              height: '400px',
+              overflow: 'hidden'
+            }}>
               <Link onClick={handleSubmit} href="/" className="image">
                 <span className="label veg">
                   <span className="dot"></span>
                 </span>
-                <img className="main-image" src={data.image} alt="Product" />
+                <img 
+                  className="main-image" 
+                  src={data.image_url} 
+                  alt={data.name}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                />
                 <img
                   className="hover-image"
-                  src={data.imageTwo}
-                  alt="Product"
+                  src={data.image_url}
+                  alt={data.name}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
                 />
               </Link>
               <span className="flags">
-                {data.sale && (
-                  <span className={data.sale === "Sale" ? "sale" : "new"}>
-                    {data.sale}
-                  </span>
+                {data.stock < 10 && (
+                  <span className="sale">Sắp hết hàng</span>
                 )}
               </span>
               <div className="gi-pro-actions">
@@ -145,14 +147,14 @@ const ItemCard = ({ data }: any) => {
                     "gi-btn-group wishlist " +
                     (isInWishlist(data) ? "active" : "")
                   }
-                  title="Wishlist"
+                  title="Yêu thích"
                 >
                   <i className="fi-rr-heart"></i>
                 </button>
                 <button
                   className="gi-btn-group quickview gi-cart-toggle"
                   data-link-action="quickview"
-                  title="Quick view"
+                  title="Xem nhanh"
                   data-bs-toggle="modal"
                   data-bs-target="#gi_quickview_modal"
                   onClick={handleShow}
@@ -165,75 +167,72 @@ const ItemCard = ({ data }: any) => {
                     "gi-btn-group compare " +
                     (isInCompare(data) ? "active" : "")
                   }
-                  title="Compare"
+                  title="So sánh"
                 >
                   <i className="fi fi-rr-arrows-repeat"></i>
                 </button>
                 <button
-                  title="Add To Cart"
+                  title="Thêm vào giỏ hàng"
                   className="gi-btn-group add-to-cart"
                   onClick={() => handleCart(data)}
                 >
                   <i className="fi-rr-shopping-basket"></i>
                 </button>
               </div>
-              <div className="gi-pro-option">
-                {data.color1 && data.color2 && data.color3 && (
-                  <ul className="colors">
-                    {data.color1 && (
-                      <li className={`color-${data.color1}`}>
-                        <a href=""></a>
-                      </li>
-                    )}
-                    {data.color2 && (
-                      <li className={`color-${data.color2}`}>
-                        <a href=""></a>
-                      </li>
-                    )}
-                    {data.color3 && (
-                      <li className={`color-${data.color3}`}>
-                        <a href=""></a>
-                      </li>
-                    )}
-                  </ul>
-                )}
-                {data.size1 && data.size2 && (
-                  <ul className="sizes">
-                    {data.size1 && (
-                      <li>
-                        <a href="">{data.size1}</a>
-                      </li>
-                    )}
-                    {data.size2 && (
-                      <li>
-                        <a href="">{data.size2}</a>
-                      </li>
-                    )}
-                  </ul>
-                )}
-              </div>
             </div>
           </div>
           <div className="gi-pro-content">
-            <Link href="/shop-left-sidebar-col-3">
-              <h6 className="gi-pro-stitle">{data.category}</h6>
-            </Link>
             <h5 className="gi-pro-title">
-              <Link href="/product-left-sidebar">{data.title}</Link>
+              <Link href="/product-left-sidebar">{data.name}</Link>
             </h5>
-            <p className="gi-info">
-              Contrary to popular belief, Lorem Ipsum is not simply random text.
-              It has roots in a piece of classical Latin literature from 45 BC,
-              making it over 2000 years old.
-            </p>
+            <div className="description-container" style={{
+              position: 'relative',
+              marginBottom: '10px'
+            }}>
+              <p className="gi-info" style={{ 
+                fontSize: '14px', 
+                color: '#666',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                lineHeight: '1.4',
+                margin: 0,
+                cursor: 'pointer'
+              }}>
+                {data.description}
+              </p>
+              <div className="description-full" style={{
+                display: 'none',
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                right: 0,
+                backgroundColor: 'white',
+                padding: '10px',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                zIndex: 1,
+                fontSize: '14px',
+                color: '#666',
+                lineHeight: '1.4',
+                borderRadius: '4px'
+              }}>
+                {data.description}
+              </div>
+            </div>
+            <style jsx>{`
+              .description-container:hover .description-full {
+                display: block;
+              }
+            `}</style>
             <div className="gi-pro-rat-price">
               <span className="gi-pro-rating">
-                <StarRating rating={data.rating} />
-                <span className="qty">{data.weight}</span>
+                <StarRating rating={5} />
+                <span className="qty">Còn lại: {data.stock}</span>
               </span>
               <span className="gi-price">
-                <span className="new-price">${data.newPrice}.00</span>
-                <span className="old-price">${data.oldPrice}.00</span>
+                <span className="new-price">{data.price.toLocaleString('vi-VN')}đ</span>
               </span>
             </div>
           </div>

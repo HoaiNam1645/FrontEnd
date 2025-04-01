@@ -3,11 +3,20 @@ import { Col, Row } from "react-bootstrap";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import CategoryItem from "../product-item/CategoryItem";
-import useSWR from "swr";
-import fetcher from "../fetcher-api/Fetcher";
+import axios from "axios";
+import { useEffect, useState } from "react";
 import Spinner from "../button/Spinner";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
+
+interface Category {
+  _id: string;
+  name: string;
+  image_url: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
 
 const Category = ({
   onSuccess = () => {},
@@ -16,22 +25,35 @@ const Category = ({
   className = "padding-tb-40",
 }) => {
   const { direction } = useSelector((state: RootState) => state.theme);
-  const { data, error } = useSWR("/api/grocerycategory", fetcher, {
-    onSuccess,
-    onError,
-  });
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (error) return <div>Failed to load products</div>;
-  if (!data)
-    return (
-      <div>
-        <Spinner />
-      </div>
-    );
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/categories/getAll');
+        if (response.data.success) {
+          setCategories(response.data.data);
+          onSuccess();
+        }
+      } catch (err) {
+        setError('Failed to load categories');
+        onError();
+        console.error('Error fetching categories:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  if (error) return <div>{error}</div>;
+  if (loading) return <div><Spinner /></div>;
 
   const getData = () => {
-    if (hasPaginate) return data.data;
-    else return data;
+    return categories;
   };
 
   return (
@@ -73,12 +95,20 @@ const Category = ({
               }}
               className={`gi-category-block owl-carousel  ${direction == "RTL" ? "rtl" : "ltr"}`}
             >
-              {getData().map((item: any, index: number) => (
+              {getData().map((item: Category) => (
                 <SwiperSlide
-                  key={index}
-                  className={`gi-cat-box gi-cat-box-${item.num}`}
+                  key={item._id}
+                  className="gi-cat-box"
                 >
-                  <CategoryItem data={item} />
+                  <CategoryItem 
+                    data={{
+                      _id: item._id,
+                      name: item.name,
+                      image: item.image_url,
+                      persantine: "0%",
+                      item: "0"
+                    }} 
+                  />
                 </SwiperSlide>
               ))}
             </Swiper>

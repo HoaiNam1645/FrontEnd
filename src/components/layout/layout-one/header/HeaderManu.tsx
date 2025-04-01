@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import home from "../../../../utility/header/home";
 import classic from "../../../../utility/header/classic";
 import banner from "../../../../utility/header/benner";
@@ -19,8 +20,33 @@ import CurrentLocation from "./CurrentLocation";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import { Fade } from "react-awesome-reveal";
 
+interface Category {
+  _id: string;
+  name: string;
+  image_url: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+}
+
 function HeaderManu() {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/categories/getAll');
+        if (response.data.success) {
+          setCategories(response.data.data);
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách categories:', error);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleProductClick = (index: number) => {
     setSelectedIndex(index);
@@ -303,66 +329,29 @@ function HeaderManu() {
                     <div className="gi-main-menu">
                       <ul>
                         <li className="dropdown drop-list">
-                          <Link href="/" className="dropdown-arrow">
-                            Home<i className="fi-rr-angle-small-right"></i>
+                          <Link href="/" className="dropdown-arrow">Home
+                            {/* Home<i className="fi-rr-angle-small-right"></i> */}
                           </Link>
-                          <ul className="sub-menu">
+                          {/* <ul className="sub-menu">
                             {home.map((data, index) => (
                               <li key={index}>
                                 <Link href={data.href}>{data.name}</Link>
                               </li>
                             ))}
-                          </ul>
+                          </ul> */}
                         </li>
-                        <li className="dropdown drop-list position-static">
-                          <Link href="" className="dropdown-arrow">
-                            Categories
-                            <i className="fi-rr-angle-small-right"></i>
+                        <li className="dropdown drop-list">
+                          <Link href="/shop-left-sidebar-col-3/" className="dropdown-arrow">
+                            Categories<i className="fi-rr-angle-small-right"></i>
                           </Link>
-                          <ul className="mega-menu d-block">
-                            <li className="d-flex">
-                              <span className="bg"></span>
-                              <ul className="d-block mega-block">
-                                <li className="menu_title">
-                                  <Link href="/">Classic</Link>
-                                </li>
-                                {classic.map((data, index) => (
-                                  <li key={index}>
-                                    <Link href={data.href}>{data.name}</Link>
-                                  </li>
-                                ))}
-                              </ul>
-                              <ul className="d-block mega-block">
-                                <li className="menu_title">
-                                  <Link href="">Banner</Link>
-                                </li>
-                                {banner.map((data, index) => (
-                                  <li key={index}>
-                                    <Link href={data.href}>{data.name}</Link>
-                                  </li>
-                                ))}
-                              </ul>
-                              <ul className="d-block mega-block">
-                                <li className="menu_title">
-                                  <Link href="">Columns</Link>
-                                </li>
-                                {column.map((data, index) => (
-                                  <li key={index}>
-                                    <Link href={data.href}>{data.name}</Link>
-                                  </li>
-                                ))}
-                              </ul>
-                              <ul className="d-block mega-block">
-                                <li className="menu_title">
-                                  <Link href="">List</Link>
-                                </li>
-                                {list.map((data, index) => (
-                                  <li key={index}>
-                                    <Link href={data.href}>{data.name}</Link>
-                                  </li>
-                                ))}
-                              </ul>
-                            </li>
+                          <ul className="sub-menu">
+                            {categories.map((category) => (
+                              <li key={category._id}>
+                                <Link href={`/shop-left-sidebar-col-3?categoryId=${category._id}`}>
+                                  {category.name}
+                                </Link>
+                              </li>
+                            ))}
                           </ul>
                         </li>
                         <li className="dropdown drop-list">
