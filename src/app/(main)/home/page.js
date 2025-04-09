@@ -18,10 +18,10 @@ const page = () => {
             <Deal />
             <Banner />
             <GroceryArrials />
-            <OfferBanners />
-            <Services />
+            {/* <OfferBanners /> */}
+            {/* <Services /> */}
             <Trending />
-            <LatestBlog />
+            {/* <LatestBlog /> */}
         </>
     )
 }

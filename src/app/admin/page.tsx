@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FaEdit, FaTrash, FaEye, FaPlus, FaKey } from "react-icons/fa";
+import { FaEdit, FaTrash, FaEye, FaPlus, FaKey, FaUser } from "react-icons/fa";
 import "./admin.css";
 import axios from "axios";
-
+import AdminRoute from "@/components/protected-route/AdminRoute";
 
 interface Admin {
   _id: string;
@@ -18,25 +18,31 @@ interface Admin {
   joinDate: string;
 }
 
-const listAdmin = async ( ) => {
+const listAdmin = async () => {
   try {
-    const response = await axios.get("http://localhost:5000/api/users/getAll");
-    console.log('resposne', response.data.data);
+    const token = localStorage.getItem("login_token");
+    const response = await axios.get("http://localhost:5000/api/users/getAll", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    console.log('response', response.data.data);
 
     return response.data.data;
   } catch (error) {
     console.error("Lỗi khi lấy danh sách người dùng:", error);
+    return []; // Trả về mảng rỗng nếu có lỗi
   }
 }
 
-export default function AdminList() {
+function AdminList() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchAdmins = async () => {
       const admins = await listAdmin();
-      setAdmins(admins);
+      setAdmins(admins || []);
     };
     fetchAdmins();
   }, []);
@@ -44,7 +50,12 @@ export default function AdminList() {
   const handleDelete = async (_id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa admin này không?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/users/delete/${_id}`);
+        const token = localStorage.getItem("login_token");
+        await axios.delete(`http://localhost:5000/api/users/delete/${_id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setAdmins(admins.filter(admin => admin._id !== _id));
         alert('Xóa admin thành công!');
       } catch (error) {
@@ -58,9 +69,14 @@ export default function AdminList() {
     <div className="admin-list-container">
       <div className="page-header">
         <h1>Quản Lý Admin</h1>
-        <Link href="/admin/create" className="btn btn-primary">
-          <FaPlus /> Thêm Admin
-        </Link>
+        <div>
+          <Link href="/admin/profile" className="btn btn-secondary me-2">
+            <FaUser /> Thông tin cá nhân
+          </Link>
+          <Link href="/admin/create" className="btn btn-primary">
+            <FaPlus /> Thêm Admin
+          </Link>
+        </div>
       </div>
 
       <div className="card">
@@ -137,5 +153,14 @@ export default function AdminList() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Bọc component chính bằng AdminRoute để phân quyền
+export default function AdminPage() {
+  return (
+    <AdminRoute>
+      <AdminList />
+    </AdminRoute>
   );
 }

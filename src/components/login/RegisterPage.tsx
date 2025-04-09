@@ -19,27 +19,27 @@ const RegisterPage = () => {
 
   // Define Yup validation schema
   const schema = yup.object().shape({
-    name: yup.string().required("Username is required"),
-    fullName: yup.string().required("Full name is required"),
+    name: yup.string().required("Tên người dùng là bắt buộc"),
+    fullName: yup.string().required("Tên đầy đủ là bắt buộc"),
     email: yup
       .string()
-      .email("Invalid email address")
-      .required("Email is required"),
+      .email("Địa chỉ email không hợp lệ")
+      .required("Email là bắt buộc"),
     password: yup
       .string()
-      .min(6, "Password must be at least 6 characters")
-      .required("Password is required"),
+      .min(6, "Mật khẩu phải có ít nhất 6 ký tự")
+      .required("Mật khẩu là bắt buộc"),
     confirmPassword: yup
       .string()
-      .required("Confirm password is required")
-      .oneOf([yup.ref("password")], "Passwords do not match"),
-    address: yup.string().required("Address is required"),
+      .required("Mật khẩu xác nhận là bắt buộc")
+      .oneOf([yup.ref("password")], "Mật khẩu không khớp"),
+    address: yup.string().required("Địa chỉ là bắt buộc"),
     phone: yup
       .string()
-      .matches(/^[0-9]+$/, "Phone number must contain only digits")
-      .min(10, "Phone number must be at least 10 digits")
-      .max(11, "Phone number must not exceed 11 digits")
-      .required("Phone number is required"),
+      .matches(/^[0-9]+$/, "Số điện thoại chỉ chứa các chữ số")
+      .min(10, "Số điện thoại phải có ít nhất 10 chữ số")
+      .max(11, "Số điện thoại không được vượt quá 11 chữ số")
+      .required("Số điện thoại là bắt buộc"),
   });
 
   const initialValues = {
@@ -66,7 +66,7 @@ const RegisterPage = () => {
       if (response.data) {
         localStorage.setItem("login_user", JSON.stringify(response.data));
         dispatch(login(response.data));
-        showSuccessToast("Registration successful!");
+        showSuccessToast("Đăng ký thành công!");
         router.push("/login");
         if (formikRef.current) {
           formikRef.current.resetForm();
@@ -74,9 +74,9 @@ const RegisterPage = () => {
       }
     } catch (error: any) {
       if (error.response) {
-        showErrorToast(error.response.data.message || "Registration failed");
+        showErrorToast(error.response.data.message || "Đăng ký thất bại");
       } else {
-        showErrorToast("Cannot connect to server");
+        showErrorToast("Không thể kết nối đến máy chủ");
       }
     }
   };
@@ -90,14 +90,14 @@ const RegisterPage = () => {
 
   return (
     <>
-      <Breadcrumb title={"Register"} />
+      <Breadcrumb title={"Đăng ký"} />
       <section className="gi-register padding-tb-40">
         <div className="container">
           <div className="section-title-2" style={{paddingBottom: "0px" }}>
             <h2 className="gi-title">
-              Register<span></span>
+              Đăng ký<span></span>
             </h2>
-            <p>Create a new account</p>
+            <p>Tạo tài khoản mới</p>
           </div>
           <div className="row">
             <div className="gi-register-wrapper" style={{ maxWidth: "500px", paddingBottom: "0px"}}>
@@ -137,7 +137,7 @@ const RegisterPage = () => {
                               <Form.Control
                                 type="text"
                                 name="name"
-                                placeholder="Enter username"
+                                placeholder="Nhập tên người dùng"
                                 value={values.name}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
@@ -158,7 +158,7 @@ const RegisterPage = () => {
                               <Form.Control
                                 type="text"
                                 name="fullName"
-                                placeholder="Enter full name"
+                                placeholder="Nhập tên đầy đủ"
                                 value={values.fullName}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
@@ -179,7 +179,7 @@ const RegisterPage = () => {
                               <Form.Control
                                 type="email"
                                 name="email"
-                                placeholder="Enter email"
+                                placeholder="Nhập email"
                                 value={values.email}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
@@ -200,7 +200,7 @@ const RegisterPage = () => {
                               <Form.Control
                                 type="password"
                                 name="password"
-                                placeholder="Enter password"
+                                placeholder="Nhập mật khẩu"
                                 value={values.password}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
@@ -216,12 +216,12 @@ const RegisterPage = () => {
                           </span>
 
                           <span className="gi-register-wrap">
-                            <label className="lable-form">Confirm Password*</label>
+                            <label className="lable-form">Xác nhận mật khẩu*</label>
                             <Form.Group>
                               <Form.Control
                                 type="password"
                                 name="confirmPassword"
-                                placeholder="Confirm password"
+                                placeholder="Xác nhận mật khẩu"
                                 value={values.confirmPassword}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
@@ -242,7 +242,7 @@ const RegisterPage = () => {
                               <Form.Control
                                 type="text"
                                 name="address"
-                                placeholder="Enter address"
+                                placeholder="Nhập địa chỉ"
                                 value={values.address}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
@@ -263,7 +263,7 @@ const RegisterPage = () => {
                               <Form.Control
                                 type="tel"
                                 name="phone"
-                                placeholder="Enter phone number"
+                                placeholder="Nhập số điện thoại"
                                 value={values.phone}
                                 onChange={(e) => handlePhoneChange(e, handleChange)}
                                 onBlur={handleBlur}
@@ -286,15 +286,15 @@ const RegisterPage = () => {
                           </span>
                           <span style={{ marginTop: '5px' }} className="gi-register-wrap gi-register-btn">
                             <span>
-                              Already have an account?
-                              <a href="/login">Login</a>
+                              Đã có tài khoản?
+                              <a href="/login">Đăng nhập</a>
                             </span>
                             <button 
                               className="gi-btn-1" 
                               type="submit"
                               disabled={!isValid || !dirty}
                             >
-                              Register
+                              Đăng ký
                             </button>
                           </span>
                         </Form>

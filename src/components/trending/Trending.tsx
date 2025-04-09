@@ -25,11 +25,11 @@ const Trending = () => {
                     <div className="banner-content">
                       <div className="banner-text">
                         <span className="gi-banner-title">
-                          Our top most products check it now
+                          Sản phẩm top được kiểm tra ngay bây giờ
                         </span>
                       </div>
                       <a href="/shop-left-sidebar-col-3" className="gi-btn-2">
-                        Shop Now
+                        Mua ngay
                       </a>
                     </div>
                   </div>

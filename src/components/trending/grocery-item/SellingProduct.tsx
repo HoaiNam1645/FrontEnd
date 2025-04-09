@@ -2,15 +2,19 @@ import { Fade } from "react-awesome-reveal";
 import { Col } from "react-bootstrap";
 import Slider from "react-slick";
 import TrendingItem from "../trendingItem/TrendingItem";
-import useSWR from "swr";
-import fetcher from "../../fetcher-api/Fetcher";
 import Spinner from "@/components/button/Spinner";
+import { useEffect, useState } from "react";
+import { Product, productService } from "@/services/productService";
 
 const SellingProduct = ({
   onSuccess = () => {},
   hasPaginate = false,
   onError = () => {},
 }) => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const settings = {
     dots: false,
     infinite: true,
@@ -59,23 +63,28 @@ const SellingProduct = ({
     ],
   };
 
-  const { data, error } = useSWR("/api/selling", fetcher, {
-    onSuccess,
-    onError,
-  });
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const data = await productService.getAllProducts();
+        console.log('Products data received in SellingProduct component:', data);
+        setProducts(data || []);
+        onSuccess();
+      } catch (err) {
+        setError("Không thể tải sản phẩm");
+        console.error('Error in SellingProduct component:', err);
+        onError();
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (error) return <div>Failed to load products</div>;
-  if (!data)
-    return (
-      <div>
-        <Spinner />
-      </div>
-    );
+    fetchProducts();
+  }, []);
 
-  const getData = () => {
-    if (hasPaginate) return data.data;
-    else return data;
-  };
+  if (error) return <div>Không thể tải sản phẩm</div>;
+  if (loading) return <Spinner />;
 
   return (
     <>
@@ -91,14 +100,14 @@ const SellingProduct = ({
             <div className="section-title">
               <div className="section-detail">
                 <h2 className="gi-title">
-                  Top <span>Selling</span>
+                  Top <span>Bán chạy</span>
                 </h2>
               </div>
             </div>
           </Col>
           <Slider {...settings} className="gi-trending-slider">
-            {getData().map((item: any, index: number) => (
-              <TrendingItem key={index} data={item} />
+            {products.map((item: Product) => (
+              <TrendingItem key={item._id} data={item} />
             ))}
           </Slider>
         </Fade>

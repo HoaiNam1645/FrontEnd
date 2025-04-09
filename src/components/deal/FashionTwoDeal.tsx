@@ -2,34 +2,46 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { Fade } from "react-awesome-reveal";
-import useSWR from "swr";
-import fetcher from "../fetcher-api/Fetcher";
 import DealendTimer from "../dealend-timer/DealendTimer";
 import { Col, Row } from "react-bootstrap";
 import Spinner from "../button/Spinner";
 import ItemCard from "../product-item/ItemCard";
+import { useEffect, useState } from "react";
+import { productService, Product } from "@/services/productService";
 
 const FashionTwoDeal = ({
   onSuccess = () => {},
   hasPaginate = false,
   onError = () => {},
 }) => {
-  const { data, error } = useSWR("/api/fashiontwodeal", fetcher, {
-    onSuccess,
-    onError,
-  });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (error) return <div>Failed to load products</div>;
-  if (!data)
-    return (
-      <div>
-        <Spinner />
-      </div>
-    );
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const data = await productService.getAllProducts();
+        setProducts(data);
+        onSuccess();
+      } catch (err) {
+        setError("Không thể tải sản phẩm");
+        console.error(err);
+        onError();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  if (error) return <div>⚠️ {error}</div>;
+  if (loading) return <Spinner />;
 
   const getData = () => {
-    if (hasPaginate) return data.data;
-    else return data;
+    return products;
   };
 
   return (

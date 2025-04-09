@@ -5,17 +5,24 @@ import Link from "next/link";
 import SidebarCart from "../../../model/SidebarCart";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
-import { RootState } from "@/store";
+import { RootState, AppDispatch } from "@/store";
 import { logout, setUserData } from "@/store/reducers/registrationSlice";
 import { setSearchTerm } from "@/store/reducers/filterReducer";
+import { fetchUserCartAsync } from "@/store/reducers/cartSlice";
+
+interface User {
+  _id: string;
+  [key: string]: any;
+}
 
 function HeaderTwo({ cartItems, wishlistItems }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const isAuthenticated = useSelector(
     (state: RootState) => state.registration.isAuthenticated
   );
+  const user = useSelector((state: RootState) => state.registration.user) as User | null;
   const { searchTerm } = useSelector((state: RootState) => state.filter);
   const [searchInput, setSearchInput] = useState(searchTerm || "");
 
@@ -24,6 +31,13 @@ function HeaderTwo({ cartItems, wishlistItems }) {
     const user = userdata !== "" ? JSON.parse(userdata) : null;
     dispatch(setUserData({ isAuthenticated: userdata !== "", user }));
   }, [dispatch]);
+
+  // Load giỏ hàng từ API khi người dùng đăng nhập
+  useEffect(() => {
+    if (isAuthenticated && user && user._id) {
+      dispatch(fetchUserCartAsync(user._id));
+    }
+  }, [isAuthenticated, user, dispatch]);
 
   const handleSearch = (event: any) => {
     setSearchInput(event.target.value);
@@ -50,6 +64,12 @@ function HeaderTwo({ cartItems, wishlistItems }) {
     router.push("/login/");
   };
 
+  // Tính tổng giá trị giỏ hàng
+  const cartTotal = cartItems.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0
+  );
+
   return (
     <>
       <div className="gi-header-bottom d-lg-block">
@@ -60,11 +80,8 @@ function HeaderTwo({ cartItems, wishlistItems }) {
               <div className="align-self-center gi-header-logo">
                 <div className="header-logo">
                   <Link href="/">
-                    <img
-                      src={
-                        process.env.NEXT_PUBLIC_URL +
-                        "/assets/img/logo/logo.png"
-                      }
+                    <img style={{ height: "80px", width: "auto" }}
+                      src="/assets/img/logo/logo.png"
                       alt="Site Logo"
                     />
                   </Link>
@@ -81,7 +98,7 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                   >
                     <input
                       className="form-control gi-search-bar"
-                      placeholder="Search Products..."
+                      placeholder="Tìm kiếm sản phẩm..."
                       type="text"
                       value={searchInput}
                       onChange={handleSearch}
@@ -101,16 +118,16 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                     <Link
                       href=""
                       className="gi-header-btn gi-header-user dropdown-toggle gi-user-toggle gi-header-rtl-btn"
-                      title="Account"
+                      title="Tài khoản"
                     >
                       <div className="header-icon">
                         <i className="fi-rr-user"></i>
                       </div>
                       <div className="gi-btn-desc">
-                        <span className="gi-btn-title">Account</span>
+                        <span className="gi-btn-title">Tài khoản</span>
                         <span className="gi-btn-stitle">
                           {" "}
-                          {isAuthenticated ? "Logout" : "Login"}
+                          {isAuthenticated ? "Đăng xuất" : "Đăng nhập"}
                         </span>
                       </div>
                     </Link>
@@ -122,17 +139,17 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                               className="dropdown-item"
                               href="/user-profile"
                             >
-                              My Profile
+                              Hồ sơ của tôi
                             </Link>
                           </li>
                           <li>
                             <Link className="dropdown-item" href="/orders">
-                              Orders
+                              Đơn hàng
                             </Link>
                           </li>
                           <li>
                             <a className="dropdown-item" onClick={handleLogout}>
-                              Logout
+                              Đăng xuất
                             </a>
                           </li>
                         </>
@@ -140,17 +157,17 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                         <>
                           <li>
                             <Link className="dropdown-item" href="/register">
-                              Register
+                              Đăng ký
                             </Link>
                           </li>
                           <li>
                             <Link className="dropdown-item" href="/checkout">
-                              Checkout
+                              Thanh toán
                             </Link>
                           </li>
                           <li>
                             <Link className="dropdown-item" href="/login">
-                              Login
+                              Đăng nhập
                             </Link>
                           </li>
                         </>
@@ -162,18 +179,18 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                   <Link
                     href="/wishlist"
                     className="gi-header-btn gi-wish-toggle gi-header-rtl-btn"
-                    title="Wishlist"
+                    title="Yêu thích"
                   >
                     <div className="header-icon">
                       <i className="fi-rr-heart"></i>
                     </div>
                     <div className="gi-btn-desc">
-                      <span className="gi-btn-title">Wishlist</span>
+                      <span className="gi-btn-title">Yêu thích</span>
                       <span className="gi-btn-stitle">
                         <b className="gi-wishlist-count">
                           {wishlistItems.length}
                         </b>
-                        -items
+                        {wishlistItems.length > 0 && " sản phẩm"}
                       </span>
                     </div>
                   </Link>
@@ -183,17 +200,26 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                     onClick={openCart}
                     href="#"
                     className="gi-header-btn gi-cart-toggle gi-header-rtl-btn"
-                    title="Cart"
+                    title="Giỏ hàng"
                   >
                     <div className="header-icon">
                       <i className="fi-rr-shopping-bag"></i>
-                      <span className="main-label-note-new"></span>
+                      {cartItems.length > 0 && <span className="main-label-note-new"></span>}
                     </div>
                     <div className="gi-btn-desc">
-                      <span className="gi-btn-title">Cart</span>
+                      <span className="gi-btn-title">Giỏ hàng</span>
                       <span className="gi-btn-stitle">
-                        <b className="gi-cart-count">{cartItems.length}</b>
-                        -items
+                        {isAuthenticated && (
+                          <>
+                            <b className="gi-cart-count">{cartItems.length}</b>
+                            {cartItems.length > 0 && (
+                              <>{" "}- {new Intl.NumberFormat('vi-VN', {
+                                style: 'currency',
+                                currency: 'VND'
+                              }).format(cartTotal)}</>
+                            )}
+                          </>
+                        )}
                       </span>
                     </div>
                   </Link>

@@ -1,16 +1,13 @@
 import Cart from '@/components/cart/Cart'
 import Breadcrumb from '@/components/breadcrumb/Breadcrumb'
 
-const page = () => {
+const CartPage = () => {
   return (
     <>
-
-
-      <Breadcrumb title={"Cart"} />
+      <Breadcrumb title={"Giỏ hàng"} />
       <Cart />
-
     </>
   )
 }
 
-export default page
+export default CartPage

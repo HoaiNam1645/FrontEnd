@@ -6,10 +6,11 @@ import {
   addItem,
   setItems,
   updateItemQuantity,
+  addToCartAsync
 } from "../../store/reducers/cartSlice";
 import Link from "next/link";
 import { showSuccessToast } from "../toast-popup/Toastify";
-import { RootState } from "@/store";
+import { RootState, AppDispatch } from "@/store";
 import { addWishlist, removeWishlist } from "@/store/reducers/wishlistSlice";
 import { addCompare, removeCompareItem } from "@/store/reducers/compareSlice";
 import { Product } from "@/services/productService";
@@ -18,14 +19,62 @@ interface ItemCardProps {
   data: Product;
 }
 
+interface User {
+  id: string;
+  [key: string]: any;
+}
+
 const ItemCard = ({ data }: ItemCardProps) => {
+  console.log('ItemCard rendering product:', data);
+  
   const [show, setShow] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const compareItems = useSelector((state: RootState) => state.compare.compare);
   const wishlistItems = useSelector(
     (state: RootState) => state.wishlist.wishlist
   );
   const cartItems = useSelector((state: RootState) => state.cart.items);
+  const user = localStorage.getItem('login_user') ? JSON.parse(localStorage.getItem('login_user') || '{}') : null;
+  console.log('user', user);
+  console.log('localStorage', JSON.parse(localStorage.getItem('login_user') || '{}'));
+  
+  const cartId = useSelector((state: RootState) => state.cart.cartId);
+
+  // Thêm state để theo dõi lỗi hình ảnh
+  const [imgError, setImgError] = useState(false);
+  const defaultImg = '/assets/img/product-images/1_1.jpg';
+
+  // Xử lý đường dẫn hình ảnh
+  const getImageUrl = (url: string | undefined) => {
+    if (!url) return defaultImg;
+    
+    // Nếu là đường dẫn từ localhost:5000, thử sử dụng
+    if (url.includes('localhost:5000')) {
+      return url;
+    }
+    
+    return url || defaultImg;
+  };
+
+  useEffect(() => {
+    const keys = data ? Object.keys(data) : [];
+    console.log(`Sản phẩm có các trường: ${keys.join(', ')}`);
+    console.log(`id: ${data?._id}, name: ${data?.name}, price: ${data?.price}`);
+    console.log(`image_url: ${data?.image_url}`);
+    
+    if (data?.image_url) {
+      // Kiểm tra đường dẫn hình ảnh
+      if (data.image_url.startsWith('http')) {
+        console.log('Đường dẫn hình ảnh là URL đầy đủ:', data.image_url);
+      } else if (data.image_url.startsWith('/')) {
+        console.log('Đường dẫn hình ảnh là đường dẫn tương đối từ gốc:', data.image_url);
+      } else {
+        console.log('Đường dẫn hình ảnh có thể không đúng định dạng:', data.image_url);
+      }
+    } else {
+      console.log('Sản phẩm không có đường dẫn hình ảnh');
+    }
+  }, [data]);
 
   useEffect(() => {
     const itemsFromLocalStorage =
@@ -38,27 +87,81 @@ const ItemCard = ({ data }: ItemCardProps) => {
   }, [dispatch]);
 
   const handleCart = (data: Product) => {
+    if (!user || !user.id) {
+      showSuccessToast("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!", {
+        icon: false,
+        type: "error"
+      });
+      return;
+    }
+
+    if (!user || !user.id) {
+      showSuccessToast("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.", {
+        icon: false,
+        type: "error"
+      });
+      return;
+    }
+
     const isItemInCart = cartItems.some((item) => item._id === data._id);
 
     if (!isItemInCart) {
-      dispatch(addItem({ ...data, quantity: 1 }));
-      showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
+      // Sử dụng API khi đã đăng nhập
+      dispatch(addToCartAsync({
+        userId: user.id,
+        productId: data._id,
+        quantity: 1
+      }))
+      .unwrap()
+      .then(() => {
+        // Cập nhật UI sau khi API thành công
+        dispatch(addItem({ ...data, quantity: 1 }));
+        showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
+      })
+      .catch((error) => {
+        showSuccessToast(error.message || "Có lỗi xảy ra khi thêm vào giỏ hàng", {
+          icon: false,
+          type: "error"
+        });
+      });
     } else {
-      const updatedCartItems = cartItems.map((item) =>
-        item._id === data._id
-          ? {
-              ...item,
-              quantity: item.quantity + 1
-            }
-          : item
-      );
-      dispatch(updateItemQuantity(updatedCartItems));
-      showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
+      // Cập nhật số lượng sản phẩm đã có trong giỏ hàng
+      const existingItem = cartItems.find((item) => item._id === data._id);
+      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
+      
+      if (cartId) {
+        // Gọi API cập nhật số lượng nếu đã có cartId
+        dispatch(addToCartAsync({
+          userId: user.id,
+          productId: data._id,
+          quantity: newQuantity
+        }))
+        .unwrap()
+        .then(() => {
+          // Cập nhật UI sau khi API thành công
+          const updatedCartItems = cartItems.map((item) =>
+            item._id === data._id
+              ? {
+                  ...item,
+                  quantity: item.quantity + 1
+                }
+              : item
+          );
+          dispatch(updateItemQuantity(updatedCartItems));
+          showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
+        })
+        .catch((error) => {
+          showSuccessToast(error.message || "Có lỗi xảy ra khi cập nhật giỏ hàng", {
+            icon: false,
+            type: "error"
+          });
+        });
+      }
     }
   };
 
   const isInWishlist = (data: Product) => {
-    return wishlistItems.some((item) => item._id === data._id);
+      return wishlistItems.some((item) => item._id === data._id);
   };
 
   const handleWishlist = (data: Product) => {
@@ -103,12 +206,13 @@ const ItemCard = ({ data }: ItemCardProps) => {
   return (
     <>
       <div className="gi-product-content">
-        <div className={` gi-product-inner`}>
+        <div className={`gi-product-inner`} style={{ margin: '0 auto', maxWidth: '100%' }}>
           <div className="gi-pro-image-outer">
             <div className="gi-pro-image" style={{ 
               width: '100%',
               height: '400px',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              backgroundColor: '#f8f8f8'
             }}>
               <Link onClick={handleSubmit} href="/" className="image">
                 <span className="label veg">
@@ -116,22 +220,29 @@ const ItemCard = ({ data }: ItemCardProps) => {
                 </span>
                 <img 
                   className="main-image" 
-                  src={data.image_url} 
+                  src={imgError ? defaultImg : getImageUrl(data.image_url)} 
                   alt={data.name}
                   style={{
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover'
                   }}
+                  onError={(e) => {
+                    console.log('Lỗi tải hình ảnh, đang sử dụng ảnh dự phòng:', data.image_url);
+                    setImgError(true);
+                  }}
                 />
                 <img
                   className="hover-image"
-                  src={data.image_url}
+                  src={imgError ? defaultImg : getImageUrl(data.image_url)}
                   alt={data.name}
                   style={{
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover'
+                  }}
+                  onError={(e) => {
+                    setImgError(true);
                   }}
                 />
               </Link>
@@ -232,7 +343,7 @@ const ItemCard = ({ data }: ItemCardProps) => {
                 <span className="qty">Còn lại: {data.stock}</span>
               </span>
               <span className="gi-price">
-                <span className="new-price">{data.price.toLocaleString('vi-VN')}đ</span>
+                <span className="new-price">{data?.price ? data.price.toLocaleString('vi-VN') : '0'}đ</span>
               </span>
             </div>
           </div>

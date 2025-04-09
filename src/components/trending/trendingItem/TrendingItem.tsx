@@ -2,47 +2,29 @@ import { useDispatch, useSelector } from "react-redux";
 import { addItem, updateItemQuantity } from "../../../store/reducers/cartSlice";
 import { showSuccessToast } from "@/components/toast-popup/Toastify";
 import { RootState } from "@/store";
+import { Product } from "@/services/productService";
 
-interface Item {
-  id: number;
-  title: string;
-  newPrice: number;
-  waight: string;
-  image: string;
-  imageTwo: string;
-  date: string;
-  status: string;
-  rating: number;
-  oldPrice: number;
-  location: string;
-  brand: string;
-  sku: number;
-  category: string;
-  quantity: number;
-}
-
-const TrendingItem = ({ data }) => {
+const TrendingItem = ({ data }: { data: Product }) => {
   const cartItems = useSelector((state: RootState) => state.cart.items);
   const dispatch = useDispatch();
 
-  const handleCart = (data: Item) => {
-    const isItemInCart = cartItems.some((item: Item) => item.id === data.id);
+  const handleCart = (data: Product) => {
+    const isItemInCart = cartItems.some((item) => item._id === data._id);
 
     if (!isItemInCart) {
       dispatch(addItem({ ...data, quantity: 1 }));
-      showSuccessToast("Add product in Cart Successfully!");
+      showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
     } else {
-      const updatedCartItems = cartItems.map((item: Item) =>
-        item.id === data.id
+      const updatedCartItems = cartItems.map((item) =>
+        item._id === data._id
           ? {
               ...item,
-              quantity: item.quantity + 1,
-              price: item.newPrice + data.newPrice,
-            } // Increment quantity and update price
+              quantity: item.quantity + 1
+            }
           : item
       );
       dispatch(updateItemQuantity(updatedCartItems));
-      showSuccessToast("Add product in Cart Successfully!");
+      showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
     }
   };
 
@@ -53,23 +35,22 @@ const TrendingItem = ({ data }) => {
           <div className="gi-pro-image-outer">
             <div className="gi-pro-image">
               <a href="/product-left-sidebar" className="image">
-                <img className="main-image" src={data.image} alt="Product" />
+                <img className="main-image" src={data.image_url} alt={data.name} />
               </a>
             </div>
           </div>
           <div className="gi-pro-content">
             <h5 className="gi-pro-title">
-              <a href="/product-left-sidebar">{data.title}</a>
+              <a href="/product-left-sidebar">{data.name}</a>
             </h5>
             <h6 className="gi-pro-stitle">
-              <a href="/shop-left-sidebar-col-3">{data.name}</a>
+              <a href="/shop-left-sidebar-col-3">{data.description}</a>
             </h6>
             <div className="gi-pro-rat-price">
               <div className="gi-pro-rat-pri-inner">
                 <span className="gi-price">
-                  <span className="new-price">${data.newPrice}.00</span>
-                  <span className="old-price">${data.oldPrice}.00</span>
-                  <span className="qty">- {data.waight}</span>
+                  <span className="new-price">{data.price?.toLocaleString('vi-VN')}đ</span>
+                  <span className="qty">- Còn: {data.stock}</span>
                 </span>
               </div>
             </div>

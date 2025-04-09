@@ -3,6 +3,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Autoplay } from "swiper/modules";
 import "swiper/css";
 import Link from "next/link";
+import { color } from "html2canvas/dist/types/css/types/color";
 
 function HeroSlider() {
   return (
@@ -32,14 +33,14 @@ function HeroSlider() {
                     <SwiperSlide className="gi-slide-item swiper-slide d-flex slide-1">
                       <div className="gi-slide-content slider-animation">
                         <p>
-                          Starting at $ <b>20.00</b>
+                          Bắt đầu <b>20.000.000đ</b>
                         </p>
                         <h1 className="gi-slide-title">
-                          Organic & healthy vegetables
+                          Công nghệ chính hãng & chất lượng vượt trội
                         </h1>
                         <div className="gi-slide-btn">
                           <a href="#" className="gi-btn-1">
-                            Shop Now{" "}
+                            Mua ngay{" "}
                             <i
                               className="fi-rr-angle-double-small-right"
                               aria-hidden="true"
@@ -50,15 +51,15 @@ function HeroSlider() {
                     </SwiperSlide>
                     <SwiperSlide className="gi-slide-item swiper-slide d-flex slide-2">
                       <div className="gi-slide-content slider-animation">
-                        <p>
-                          Starting at $ <b>29.99</b>
+                        <p style={{ color: "white" }}>
+                          Bắt đầu <b>27.000.000đ</b>
                         </p>
-                        <h1 className="gi-slide-title">
-                          Explore fresh & juicy fruits
+                        <h1 className="gi-slide-title" style={{ color: "white" }}>
+                          Thiết bị chất – Giá tốt nhất
                         </h1>
-                        <div className="gi-slide-btn">
+                        <div className="gi-slide-btn" style={{ color: "white" }}>
                           <Link href="/" className="gi-btn-1">
-                            Shop Now{" "}
+                            Mua ngay{" "}
                             <i
                               className="fi-rr-angle-double-small-right"
                               aria-hidden="true"

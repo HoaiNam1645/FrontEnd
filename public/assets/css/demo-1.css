@@ -5503,10 +5503,14 @@ i.gicon.gi-star.fill {
 .gi-hero .gi-main-content .gi-slider-content .gi-main-slider .slide-1 {
   background-image: url(../img/hero-bg/1.jpg);
   background-position: center;
+  width: 1800px;
+  height: 700px;
 }
 .gi-hero .gi-main-content .gi-slider-content .gi-main-slider .slide-2 {
-  background-image: url(../img/hero-bg/2.jpg);
+  background-image: url(../img/hero-bg/2.png);
   background-position: center;
+  width: 1800px;
+  height: 700px;
 }
 .gi-hero .gi-main-content .gi-slider-content .gi-main-slider .slide-3 {
   background-image: url(../img/hero-bg/6.jpg);

@@ -6,7 +6,7 @@ import useSWR from "swr";
 import fetcher from "@/components/fetcher-api/Fetcher";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { setSelectedCategory } from "@/store/reducers/filterReducer";
 import { useState } from "react";
 import { slice } from "lodash";
@@ -15,6 +15,7 @@ import Link from "next/link";
 
 function Footer({ onSuccess = () => {}, onError = () => {} }) {
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useDispatch();
   const [dropdownState, setDropdownState] = useState(null);
   const { selectedCategory } = useSelector((state: RootState) => state.filter);
@@ -43,6 +44,11 @@ function Footer({ onSuccess = () => {}, onError = () => {} }) {
     dispatch(setSelectedCategory(updatedCategory));
     router.push("/shop-left-sidebar-col-3");
   };
+
+  // Kiểm tra nếu đang ở trang đăng nhập hoặc đăng ký thì không hiển thị
+  if (pathname === '/login' || pathname === '/register') {
+    return null;
+  }
 
   return (
     <>

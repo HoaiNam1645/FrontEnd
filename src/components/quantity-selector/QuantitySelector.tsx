@@ -1,16 +1,18 @@
-import { useDispatch } from "react-redux";
-import { updateQuantity } from "../../store/reducers/cartSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { updateItemQuantity } from "../../store/reducers/cartSlice";
+import { RootState } from "../../store";
 
 const QuantitySelector = ({
   id,
   quantity,
   setQuantity,
 }: {
-  id: number;
+  id: string;
   quantity: number;
   setQuantity?: any;
 }) => {
   const dispatch = useDispatch();
+  const cartItems = useSelector((state: RootState) => state.cart.items);
 
   const handleQuantityChange = (operation: "increase" | "decrease") => {
     let newQuantity = quantity;
@@ -24,7 +26,12 @@ const QuantitySelector = ({
     if (undefined !== setQuantity) {
       setQuantity(newQuantity);
     } else {
-      dispatch(updateQuantity({ id, quantity: newQuantity }));
+      const updatedCartItems = cartItems.map(item => 
+        item._id === id 
+          ? { ...item, quantity: newQuantity } 
+          : item
+      );
+      dispatch(updateItemQuantity(updatedCartItems));
     }
   };
 

@@ -48,8 +48,6 @@ const LoginPage = () => {
     }
   }, [isAuthenticated, router]);
 
-
-
   const handleLogin = async (e: any) => {
     e.preventDefault();
 
@@ -76,6 +74,10 @@ const LoginPage = () => {
           throw new Error("Dữ liệu trả về không hợp lệ");
         }
 
+        // Hiển thị thông tin về vai trò để debug
+        console.log("User role:", user.role);
+        console.log("User data:", user);
+
         // Lưu token & user vào localStorage
         localStorage.setItem("login_token", token);
         localStorage.setItem("login_user", JSON.stringify(user));
@@ -84,11 +86,21 @@ const LoginPage = () => {
         dispatch(login(user));
 
         showSuccessToast("Đăng nhập thành công");
-        router.push("/home/");
+        
+        // Kiểm tra role để điều hướng - Sử dụng window.location thay vì router.push
+        if (user.role === 'admin') {
+          console.log("Chuyển hướng đến trang admin");
+          // router.push("/admin");
+          window.location.href = "/admin";
+        } else {
+          console.log("Chuyển hướng đến trang chủ");
+          // router.push("/");
+          window.location.href = "/";
+        }
       }
     } catch (error: any) {
-      console.error("Login error:", error.response.data.message);
-      showErrorToast(error.response.data.message);
+      console.error("Login error:", error.response?.data?.message || "Đăng nhập thất bại");
+      showErrorToast(error.response?.data?.message || "Đăng nhập thất bại");
     }
 
     setValidated(true);
@@ -101,9 +113,9 @@ const LoginPage = () => {
         <Container>
           <div className="section-title-2">
             <h2 className="gi-title">
-              Login<span></span>
+              Đăng nhập<span></span>
             </h2>
-            <p>Get access to your Orders, Wishlist and Recommendations.</p>
+            <p>Nhận quyền truy cập vào đơn hàng, yêu thích và gợi ý.</p>
           </div>
           <div className="gi-login-content">
             <div className="gi-login-box">
@@ -124,11 +136,11 @@ const LoginPage = () => {
                             name="name"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Enter your email add..."
+                            placeholder="Nhập địa chỉ email của bạn..."
                             required
                           />
                           <Form.Control.Feedback type="invalid">
-                            Please Enter correct username.
+                            Vui lòng nhập đúng tên người dùng.
                           </Form.Control.Feedback>
                         </Form.Group>
                       </span>
@@ -145,24 +157,24 @@ const LoginPage = () => {
                             min={6}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="Enter your password"
+                            placeholder="Nhập mật khẩu của bạn..."
                             required
                           />
                           <Form.Control.Feedback type="invalid">
-                            Password must be at least 6 characters
+                            Mật khẩu phải có ít nhất 6 ký tự
                           </Form.Control.Feedback>
                         </Form.Group>
                       </span>
 
                       <span className="gi-login-wrap gi-login-fp">
                         <label>
-                          <Link href="/forgot-password">Forgot Password?</Link>
+                          <Link href="/forgot-password">Quên mật khẩu?</Link>
                         </label>
                       </span>
                       <span className="gi-login-wrap gi-login-btn">
                         <span>
                           <a href="/register" className="">
-                            Create Account?
+                            Tạo tài khoản?
                           </a>
                         </span>
                         <button
@@ -170,7 +182,7 @@ const LoginPage = () => {
                           className="gi-btn-1 btn"
                           type="submit"
                         >
-                          Login
+                          Đăng nhập
                         </button>
                       </span>
                     </Form>
@@ -178,7 +190,7 @@ const LoginPage = () => {
                 </div>
               </div>
             </div>
-            <div className="gi-login-box d-n-991">
+            {/* <div className="gi-login-box d-n-991">
               <div className="gi-login-img">
                 <img
                   src={
@@ -187,7 +199,7 @@ const LoginPage = () => {
                   alt="login"
                 />
               </div>
-            </div>
+            </div> */}
           </div>
         </Container>
       </section>

@@ -28,9 +28,9 @@ const GroceryArrials = () => {
                 <div className="section-title">
                   <div className="section-detail">
                     <h2 className="gi-title">
-                      New <span>Arrivals</span>
+                      Hàng mới <span>về</span>
                     </h2>
-                    <p>Shop online for new arrivals and get free shipping!</p>
+                    <p>Mua online hàng mới về và nhận miễn phí giao hàng!</p>
                   </div>
                 </div>
               </div>
@@ -49,7 +49,7 @@ const GroceryArrials = () => {
                       onClick={() => handleProductClick(0)}
                       data-bs-toggle="tab"
                     >
-                      All
+                      {/* All */}
                     </a>
                   </Tab>
                   <Tab
@@ -64,7 +64,7 @@ const GroceryArrials = () => {
                       data-bs-toggle="tab"
                       onClick={() => handleProductClick(1)}
                     >
-                      Snack & Spices
+                      {/* Snack & Spices */}
                     </a>
                   </Tab>
                   <Tab
@@ -79,7 +79,7 @@ const GroceryArrials = () => {
                       data-bs-toggle="tab"
                       onClick={() => handleProductClick(2)}
                     >
-                      Fruits
+                      {/* Fruits */}
                     </a>
                   </Tab>
                   <Tab
@@ -94,7 +94,7 @@ const GroceryArrials = () => {
                       data-bs-toggle="tab"
                       onClick={() => handleProductClick(3)}
                     >
-                      Vegetables
+                      {/* Vegetables */}
                     </a>
                   </Tab>
                 </ul>

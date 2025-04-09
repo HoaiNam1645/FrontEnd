@@ -1,11 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FaHome, FaChartLine, FaUsers, FaUserShield, FaCog, FaBell, FaList, FaBox } from "react-icons/fa";
+import { FaHome, FaChartLine, FaUsers, FaUserShield, FaCog, FaBell, FaList, FaBox, FaSignOutAlt, FaSignInAlt, FaUser } from "react-icons/fa";
 import CategoryDropdown from "./CategoryDropdown";
 import "./admin.css";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
+import { useRouter } from "next/navigation";
 
 export default function AdminLayout({
   children,
@@ -14,6 +17,20 @@ export default function AdminLayout({
 }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const router = useRouter();
+  
+  // Lấy thông tin đăng nhập từ Redux store
+  const isAuthenticated = useSelector((state: RootState) => state.registration.isAuthenticated);
+  const user = useSelector((state: RootState) => state.registration.user);
+
+  const handleLogout = () => {
+    // Xóa token và thông tin người dùng từ localStorage
+    localStorage.removeItem('login_token');
+    localStorage.removeItem('login_user');
+    
+    // Chuyển hướng về trang đăng nhập
+    window.location.href = '/login';
+  };
 
   return (
     <div className="modern-wrapper">
@@ -27,13 +44,13 @@ export default function AdminLayout({
               height={35}
               className="brand-logo"
             />
-            <span className="brand-name">AdminLTE</span>
+            <span className="brand-name">Admin</span>
           </Link>
 
           <div className="nav-links">
             <Link href="/dashboard" className="nav-link">
               <FaHome />
-              <span>Trang Chủ</span>
+              <span>Tin Tức</span>
             </Link>
             <Link href="/analytics" className="nav-link">
               <FaChartLine />
@@ -46,6 +63,10 @@ export default function AdminLayout({
             <Link href="/user" className="nav-link">
               <FaUsers />
               <span>Người Dùng</span>
+            </Link>
+            <Link href="/user" className="nav-link">
+              <FaUsers />
+              <span>Đơn Hàng</span>
             </Link>
             <CategoryDropdown />
             <Link href="/product" className="nav-link">
@@ -94,29 +115,40 @@ export default function AdminLayout({
                 className="profile-btn"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
               >
-                <Image
-                  src="/assets/admin/img/user2-160x160.jpg"
-                  alt="Profile"
-                  width={32}
-                  height={32}
-                  className="profile-img"
-                />
+                {isAuthenticated && user ? (
+                  <Image
+                    src="/assets/admin/img/user2-160x160.jpg"
+                    alt="Profile"
+                    width={32}
+                    height={32}
+                    className="profile-img"
+                  />
+                ) : (
+                  <FaUser className="profile-icon" />
+                )}
               </button>
               {isProfileOpen && (
                 <div className="dropdown-content">
-                  <Link href="/profile" className="dropdown-item">
-                    <i className="fas fa-user"></i>
-                    <span>Hồ Sơ</span>
-                  </Link>
-                  <Link href="/settings" className="dropdown-item">
-                    <FaCog />
-                    <span>Cài Đặt</span>
-                  </Link>
-                  <div className="dropdown-divider"></div>
-                  <Link href="/logout" className="dropdown-item">
-                    <i className="fas fa-sign-out-alt"></i>
-                    <span>Đăng Xuất</span>
-                  </Link>
+                  {isAuthenticated && user ? (
+                    // Đã đăng nhập
+                    <>
+                      <Link href="/admin/profile" className="dropdown-item">
+                        <FaUser />
+                        <span>Hồ Sơ</span>
+                      </Link>
+                      <div className="dropdown-divider"></div>
+                      <button onClick={handleLogout} className="dropdown-item">
+                        <FaSignOutAlt />
+                        <span>Đăng Xuất</span>
+                      </button>
+                    </>
+                  ) : (
+                    // Chưa đăng nhập
+                    <Link href="/login" className="dropdown-item">
+                      <FaSignInAlt />
+                      <span>Đăng Nhập</span>
+                    </Link>
+                  )}
                 </div>
               )}
             </div>

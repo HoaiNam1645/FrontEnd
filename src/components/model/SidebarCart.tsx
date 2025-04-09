@@ -1,15 +1,36 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
-import { removeItem } from "../../store/reducers/cartSlice";
+import { removeItem, fetchUserCartAsync, removeCartItemAsync } from "../../store/reducers/cartSlice";
 import Link from "next/link";
 import QuantitySelector from "../quantity-selector/QuantitySelector";
+import { showSuccessToast } from "../toast-popup/Toastify";
+import { Product } from "@/services/productService";
+import Spinner from "../button/Spinner";
+import { AppDispatch } from "@/store";
+
+interface User {
+  _id: string;
+  [key: string]: any;
+}
 
 const SidebarCart = ({ closeCart, isCartOpen }: any) => {
   const cartItems = useSelector((state: RootState) => state.cart.items);
+  const isAuthenticated = useSelector((state: RootState) => state.registration.isAuthenticated);
+  const user = useSelector((state: RootState) => state.registration.user) as User | null;
+  const cartId = useSelector((state: RootState) => state.cart.cartId);
+  const loading = useSelector((state: RootState) => state.cart.loading);
+  
   const [subTotal, setSubTotal] = useState(0);
   const [vat, setVat] = useState(0);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
+
+  // Lấy giỏ hàng từ API khi người dùng đã đăng nhập
+  useEffect(() => {
+    if (isAuthenticated && user?._id && isCartOpen) {
+      dispatch(fetchUserCartAsync(user._id));
+    }
+  }, [isAuthenticated, user, isCartOpen, dispatch]);
 
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -19,12 +40,12 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
     }
 
     const subtotal = cartItems.reduce(
-      (acc, item) => acc + item.newPrice * item.quantity,
+      (acc, item) => acc + item.price * item.quantity,
       0
     );
     setSubTotal(subtotal);
     // Calculate VAT
-    const vatAmount = subtotal * 0.2;
+    const vatAmount = subtotal * 0.1; // 10% VAT cho Việt Nam
     setVat(vatAmount);
   }, [cartItems]);
   const total = subTotal + vat;
@@ -33,8 +54,24 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
     e.preventDefault();
   };
 
-  const handleRemoveFromCart = (item: any) => {
-    dispatch(removeItem(item.id));
+  const handleRemoveFromCart = (item: Product & { quantity: number }) => {
+    if (isAuthenticated && cartId) {
+      dispatch(removeCartItemAsync({ cartId, productId: item._id }))
+        .unwrap()
+        .then(() => {
+          showSuccessToast("Xóa sản phẩm khỏi giỏ hàng thành công!");
+        })
+        .catch((error: any) => {
+          showSuccessToast(error || "Có lỗi xảy ra khi xóa sản phẩm", {
+            icon: false,
+            type: "error"
+          });
+          // Fallback to local removal if API fails
+          dispatch(removeItem(item._id));
+        });
+    } else {
+      dispatch(removeItem(item._id));
+    }
   };
 
   return (
@@ -53,14 +90,22 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
         <div className="gi-cart-inner">
           <div className="gi-cart-top">
             <div className="gi-cart-title">
-              <span className="cart_title">My Cart</span>
+              <span className="cart_title">Giỏ hàng của tôi</span>
               <Link onClick={closeCart} href="/" className="gi-cart-close">
                 <i onClick={handleSubmit} className="fi-rr-cross-small"></i>
               </Link>
             </div>
-            {cartItems.length === 0 ? (
+            {loading ? (
+              <div className="d-flex justify-content-center align-items-center py-4">
+                <Spinner />
+              </div>
+            ) : !isAuthenticated ? (
+              <div className="gi-pro-content cart-pro-title py-3">
+                Vui lòng đăng nhập để xem giỏ hàng của bạn.
+              </div>
+            ) : cartItems.length === 0 ? (
               <div className="gi-pro-content cart-pro-title">
-                Your cart is empty.
+                Giỏ hàng của bạn đang trống.
               </div>
             ) : (
               <ul className="gi-cart-pro-items">
@@ -68,22 +113,26 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
                   <li key={index}>
                     <Link
                       onClick={handleSubmit}
-                      href="/"
+                      href={`/product/${item._id}`}
                       className="gi-pro-img"
                     >
-                      <img src={item.image} alt="product" />
+                      <img src={item.image_url} alt={item.name} />
                     </Link>
                     <div className="gi-pro-content">
-                      <Link href="/" className="cart-pro-title">
-                        {item.title}
+                      <Link href={`/product/${item._id}`} className="cart-pro-title">
+                        {item.name}
                       </Link>
                       <span className="cart-price">
-                        {item.waight}{" "}
-                        <span>${item.newPrice * item.quantity}.00</span>
+                        <span>
+                          {new Intl.NumberFormat('vi-VN', { 
+                            style: 'currency', 
+                            currency: 'VND' 
+                          }).format(item.price * item.quantity)}
+                        </span>
                       </span>
                       <div className="qty-plus-minus gi-qty-rtl">
                         <QuantitySelector
-                          id={item.id}
+                          id={item._id}
                           quantity={item.quantity}
                         />
                       </div>
@@ -100,23 +149,36 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
               </ul>
             )}
           </div>
-          {cartItems.length > 0 && (
+          {!loading && isAuthenticated && cartItems.length > 0 && (
             <div className="gi-cart-bottom">
               <div className="cart-sub-total">
                 <table className="table cart-table">
                   <tbody>
                     <tr>
-                      <td className="text-left">Sub-Total :</td>
-                      <td className="text-right">${subTotal.toFixed(2)}</td>
+                      <td className="text-left">Tạm tính:</td>
+                      <td className="text-right">
+                        {new Intl.NumberFormat('vi-VN', { 
+                          style: 'currency', 
+                          currency: 'VND' 
+                        }).format(subTotal)}
+                      </td>
                     </tr>
                     <tr>
-                      <td className="text-left">VAT (20%) :</td>
-                      <td className="text-right">${vat.toFixed(2)}</td>
+                      <td className="text-left">VAT (10%):</td>
+                      <td className="text-right">
+                        {new Intl.NumberFormat('vi-VN', { 
+                          style: 'currency', 
+                          currency: 'VND' 
+                        }).format(vat)}
+                      </td>
                     </tr>
                     <tr>
-                      <td className="text-left">Total :</td>
+                      <td className="text-left">Tổng cộng:</td>
                       <td className="text-right primary-color">
-                        ${total.toFixed(2)}
+                        {new Intl.NumberFormat('vi-VN', { 
+                          style: 'currency', 
+                          currency: 'VND' 
+                        }).format(total)}
                       </td>
                     </tr>
                   </tbody>
@@ -124,10 +186,10 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
               </div>
               <div className="cart_btn">
                 <Link href="/cart" className="gi-btn-1" onClick={closeCart}>
-                  View Cart
+                  Xem giỏ hàng
                 </Link>
                 <Link href="/checkout" className="gi-btn-2" onClick={closeCart}>
-                  Checkout
+                  Thanh toán
                 </Link>
               </div>
             </div>

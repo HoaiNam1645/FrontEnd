@@ -24,13 +24,13 @@ const Banner = () => {
                 <div className="gi-bnr-detail">
                   <div className="gi-bnr-info">
                     <h2>
-                      Fresh Fruits <br></br>Healthy Products
+                      Đồng hồ thông minh <br></br>chính hãng
                     </h2>
                     <h3>
-                      30% off sale <span>Hurry up!!!</span>
+                      Giảm 30% <span>NHANH TAY!!!</span>
                     </h3>
                     <Link href="/shop-left-sidebar-col-3" className="gi-btn-2">
-                      Shop now
+                      Mua ngay
                     </Link>
                   </div>
                 </div>

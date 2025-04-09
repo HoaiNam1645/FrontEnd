@@ -2,9 +2,9 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import ItemCard from "../../product-item/ItemCard";
 import FadeComponent from "@/components/animations/FadeComponent";
-import useSWR from "swr";
-import fetcher from "../../fetcher-api/Fetcher";
+import { useEffect, useState } from "react";
 import Spinner from "@/components/button/Spinner";
+import { productService, Product } from "@/services/productService";
 
 const RelatedProduct = ({
   className = '',
@@ -12,19 +12,34 @@ const RelatedProduct = ({
   hasPaginate = false,
   onError = () => {},
 }) => {
-  const { data, error } = useSWR("/api/deal", fetcher, { onSuccess, onError });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (error) return <div>Failed to load products</div>;
-  if (!data)
-    return (
-      <div>
-        <Spinner />
-      </div>
-    );
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const data = await productService.getAllProducts();
+        setProducts(data);
+        onSuccess();
+      } catch (err) {
+        setError("Không thể tải sản phẩm");
+        console.error(err);
+        onError();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  if (error) return <div>⚠️ {error}</div>;
+  if (loading) return <Spinner />;
 
   const getData = () => {
-    if (hasPaginate) return data.data;
-    else return data;
+    return products;
   };
 
   return (
