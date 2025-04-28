@@ -1,19 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FaCheck, FaEye, FaTimes, FaClock, FaTruck, FaCog } from "react-icons/fa";
+import { FaCheck, FaEye, FaTimes, FaClock, FaTruck, FaCog, FaTrash, FaExclamationTriangle } from "react-icons/fa";
 import axios from "axios";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AdminRoute from "@/components/protected-route/AdminRoute";
 import "./orders-admin.css";
 import { getApiUrl } from "@/config/api";
+import Link from "next/link";
 
 interface Order {
   _id: string;
   userId: string;
   totalAmount: number;
+  address: string;
+  phoneNumber: string;
   status: "pending" | "processing" | "completed" | "cancelled" | "shipped";
+  recipientName: string;
   paymentMethod: string;
   createdAt: string;
   updatedAt: string;
@@ -56,10 +60,27 @@ const updateOrderStatus = async (orderId: string, status: string) => {
   }
 };
 
+const deleteOrder = async (orderId: string) => {
+  try {
+    const token = localStorage.getItem("login_token");
+    await axios.delete(`${getApiUrl("orders/delete")}/${orderId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return true;
+  } catch (error) {
+    console.error("Error deleting order:", error);
+    throw error;
+  }
+};
+
 function OrdersList() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const getOrders = async () => {
@@ -86,12 +107,35 @@ function OrdersList() {
     }
   };
 
+  const handleDeleteOrder = async (orderId: string) => {
+    setOrderToDelete(orderId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!orderToDelete) return;
+    
+    try {
+      await deleteOrder(orderToDelete);
+      setOrders(orders.filter(order => order._id !== orderToDelete));
+      toast.success("Xóa đơn hàng thành công!");
+    } catch (error) {
+      console.error("Lỗi khi xóa đơn hàng:", error);
+      toast.error("Có lỗi xảy ra khi xóa đơn hàng!");
+    } finally {
+      setShowDeleteModal(false);
+      setOrderToDelete(null);
+    }
+  };
+
   const filteredOrders = orders.filter(
     (order) =>
       order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase())
+      order.paymentMethod.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.recipientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.phoneNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatDate = (dateString: string) => {
@@ -158,6 +202,39 @@ function OrdersList() {
         theme="light"
         style={{ marginTop: '60px' }}
       />
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <FaExclamationTriangle className="warning-icon" />
+              <h3>Xác nhận xóa đơn hàng</h3>
+            </div>
+            <div className="modal-body">
+              <p>Bạn có chắc chắn muốn xóa đơn hàng này? Hành động này không thể hoàn tác.</p>
+            </div>
+            <div className="modal-footer">
+              <button 
+                className="modal-btn cancel-btn"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setOrderToDelete(null);
+                }}
+              >
+                Hủy
+              </button>
+              <button 
+                className="modal-btn delete-btn"
+                onClick={confirmDelete}
+              >
+                Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="admin-list-container">
         <div className="page-header">
           <h1>Quản Lý Đơn Hàng</h1>
@@ -187,12 +264,11 @@ function OrdersList() {
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>ID Đơn Hàng</th>
-                      <th>ID Khách Hàng</th>
+                      <th>Người Nhận</th>
+                      <th>Địa Chỉ</th>
+                      <th>Số Điện Thoại</th>
                       <th>Tổng Tiền</th>
                       <th>Phương Thức Thanh Toán</th>
-                      <th>Ngày Tạo</th>
-                      <th>Cập Nhật Lần Cuối</th>
                       <th>Trạng Thái</th>
                       <th>Thao Tác</th>
                     </tr>
@@ -200,19 +276,18 @@ function OrdersList() {
                   <tbody>
                     {filteredOrders.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="text-center">
+                        <td colSpan={7} className="text-center">
                           Không tìm thấy đơn hàng nào
                         </td>
                       </tr>
                     ) : (
                       filteredOrders.map((order) => (
                         <tr key={order._id}>
-                          <td>{order._id}</td>
-                          <td>{order.userId}</td>
+                          <td>{order.recipientName}</td>
+                          <td>{order.address}</td>
+                          <td>{order.phoneNumber}</td>
                           <td>{formatCurrency(order.totalAmount)}</td>
                           <td>{order.paymentMethod}</td>
-                          <td>{formatDate(order.createdAt)}</td>
-                          <td>{formatDate(order.updatedAt)}</td>
                           <td>
                             <span className={getStatusBadgeClass(order.status)}>
                               {getStatusText(order.status)}
@@ -220,46 +295,23 @@ function OrdersList() {
                           </td>
                           <td>
                             <div className="status-buttons">
-                              <button
-                                className={`status-btn pending ${order.status === "pending" ? "active" : ""}`}
-                                onClick={() => handleStatusChange(order._id, "pending")}
-                                title="Chờ xử lý"
-                                disabled={order.status === "pending"}
+                              <select
+                                className="status-select"
+                                value={order.status}
+                                onChange={(e) => handleStatusChange(order._id, e.target.value)}
                               >
-                                <FaClock />
-                              </button>
-                              <button
-                                className={`status-btn processing ${order.status === "processing" ? "active" : ""}`}
-                                onClick={() => handleStatusChange(order._id, "processing")}
-                                title="Đang xử lý"
-                                disabled={order.status === "processing"}
+                                <option value="pending">Chờ xử lý</option>
+                                <option value="processing">Đang xử lý</option>
+                                <option value="shipped">Đã gửi hàng</option>
+                                <option value="completed">Hoàn thành</option>
+                              </select>
+                              <Link 
+                                href={`/orders-admin/view/${order._id}`}
+                                className="view-btn"
+                                title="Xem chi tiết"
                               >
-                                <FaCog />
-                              </button>
-                              <button
-                                className={`status-btn shipped ${order.status === "shipped" ? "active" : ""}`}
-                                onClick={() => handleStatusChange(order._id, "shipped")}
-                                title="Đã gửi hàng"
-                                disabled={order.status === "shipped"}
-                              >
-                                <FaTruck />
-                              </button>
-                              <button
-                                className={`status-btn completed ${order.status === "completed" ? "active" : ""}`}
-                                onClick={() => handleStatusChange(order._id, "completed")}
-                                title="Hoàn thành"
-                                disabled={order.status === "completed"}
-                              >
-                                <FaCheck />
-                              </button>
-                              <button
-                                className={`status-btn cancelled ${order.status === "cancelled" ? "active" : ""}`}
-                                onClick={() => handleStatusChange(order._id, "cancelled")}
-                                title="Đã hủy"
-                                disabled={order.status === "cancelled"}
-                              >
-                                <FaTimes />
-                              </button>
+                                <FaEye />
+                              </Link>
                             </div>
                           </td>
                         </tr>
