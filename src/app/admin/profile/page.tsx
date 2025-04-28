@@ -41,7 +41,7 @@ function AdminProfileContent() {
       try {
         console.log("Đang tải thông tin admin với ID:", user.id);
         const token = localStorage.getItem("login_token");
-        const response = await axios.get(`http://localhost:5000/api/users/get/${user.id}`, {
+        const response = await axios.get(`http://localhost:5001/api/users/get/${user.id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

@@ -1,14 +1,19 @@
+"use client";
 import LoginPage from '@/components/login/LoginPage'
+import { useEffect, useState } from 'react'
 
-const page = () => {
+const Page = () => {
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
     return (
         <>
-
-
-            <LoginPage />
-
+            {isClient ? <LoginPage /> : <div>Loading...</div>}
         </>
     )
 }
 
-export default page
+export default Page

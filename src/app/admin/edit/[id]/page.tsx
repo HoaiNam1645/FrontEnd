@@ -30,7 +30,7 @@ export default function EditAdmin({ params }: EditAdminProps) {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/users/get/${id}`);
+        const response = await axios.get(`http://localhost:5001/api/users/get/${id}`);
         const userData = response.data.data;
         setFormData({
           fullName: userData.fullName,
@@ -57,7 +57,7 @@ export default function EditAdmin({ params }: EditAdminProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`http://localhost:5000/api/users/update/${id}`, formData);
+      await axios.post(`http://localhost:5001/api/users/update/${id}`, formData);
       alert("Cập nhật thông tin admin thành công!");
       router.push("/admin");
     } catch (error) {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5001/api';
 
 export interface Product {
   _id: string;
@@ -12,6 +12,7 @@ export interface Product {
   image_url: string;
   createdAt: string;
   updatedAt: string;
+  rating?: number;
 }
 
 // Dữ liệu mẫu khi API không hoạt động
@@ -225,5 +226,31 @@ export const productService = {
   // Phương thức mới để lấy sản phẩm mẫu khi debugging
   getSampleProducts: () => {
     return sampleProducts;
+  },
+  
+  getProductById: async (productId: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/products/get/${productId}`);
+      
+      if (response.data && response.data.success && response.data.data) {
+        return response.data.data;
+      }
+      
+      // Nếu không tìm thấy hoặc có lỗi, trả về sản phẩm mẫu có ID tương ứng
+      const fallbackProduct = sampleProducts.find(p => p._id === productId);
+      if (fallbackProduct) {
+        return fallbackProduct;
+      }
+      
+      throw new Error('Không tìm thấy sản phẩm');
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin sản phẩm:', error.message);
+      // Tìm trong dữ liệu mẫu
+      const fallbackProduct = sampleProducts.find(p => p._id === productId);
+      if (fallbackProduct) {
+        return fallbackProduct;
+      }
+      throw new Error('Không thể lấy thông tin sản phẩm');
+    }
   }
 }; 

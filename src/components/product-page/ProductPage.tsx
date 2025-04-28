@@ -1,6 +1,5 @@
 "use client";
 import { useCallback } from "react";
-import SidebarArea from "../shop-sidebar/sidebar-area/SidebarArea";
 import { Swiper, SwiperSlide } from "swiper/react";
 import StarRating from "../stars/StarRating";
 import ProductTeb from "./product-teb/ProductTeb";
@@ -18,6 +17,17 @@ import {
   setSelectedTags,
   setSelectedWeight,
 } from "@/store/reducers/filterReducer";
+import { Product } from "@/services/productService";
+
+interface ProductPageProps {
+  order?: string;
+  none?: string;
+  lg?: number;
+  onSuccess?: () => void;
+  hasPaginate?: boolean;
+  onError?: () => void;
+  productData?: Product | null;
+}
 
 const ProductPage = ({
   order = "",
@@ -26,7 +36,8 @@ const ProductPage = ({
   onSuccess = () => {},
   hasPaginate = false,
   onError = () => {},
-}) => {
+  productData = null,
+}: ProductPageProps) => {
   const dispatch = useDispatch();
   const {
     selectedCategory,
@@ -49,7 +60,7 @@ const ProductPage = ({
     [dispatch]
   );
 
-  if (error) return <div>Failed to load products</div>;
+  if (error) return <div>Không thể tải dữ liệu sản phẩm</div>;
   if (!data)
     return (
       <div>
@@ -119,17 +130,17 @@ const ProductPage = ({
   return (
     <>
       <Col
-        lg={lg}
+        lg={12}
         md={12}
-        className={`gi-pro-rightside gi-common-rightside ${order}`}
+        className="gi-pro-rightside gi-common-rightside"
       >
-        {/* <!-- Single product content Start --> */}
+        {/* <!-- Nội dung sản phẩm bắt đầu --> */}
         <div className="single-pro-block">
-          <SingleProductContent />
+          <SingleProductContent productData={productData} />
         </div>
-        {/* <!--Single product content End -->
-                    <!-- Add More and get discount content Start --> */}
-        <div className="single-add-more m-tb-40">
+        {/* <!--Nội dung sản phẩm kết thúc -->
+                    <!-- Thêm nhiều sản phẩm và nhận giảm giá bắt đầu --> */}
+        {/* <div className="single-add-more m-tb-40">
           <Swiper
             loop={true}
             autoplay={{ delay: 1000 }}
@@ -174,7 +185,7 @@ const ProductPage = ({
                   +
                 </a>
                 <div className="add-more-img">
-                  <img src={item.image} alt="product" />
+                  <img src={item.image} alt="sản phẩm" />
                 </div>
                 <div className="add-more-info">
                   <h5>{item.title}</h5>
@@ -182,36 +193,19 @@ const ProductPage = ({
                     <StarRating rating={item.rating} />
                   </span>
                   <span className="gi-price">
-                    <span className="new-price">${item.newPrice}</span>
-                    <span className="old-price">${item.oldPrice}</span>
+                    <span className="new-price">{item.newPrice.toLocaleString()}đ</span>
+                    <span className="old-price">{item.oldPrice.toLocaleString()}đ</span>
                   </span>
                 </div>
               </SwiperSlide>
             ))}
           </Swiper>
-        </div>
+        </div> */}
 
-        {/* <!-- Single product tab start --> */}
+        {/* <!-- Tab sản phẩm bắt đầu --> */}
         <ProductTeb />
-        {/* <!-- product details description area end --> */}
+        {/* <!-- Khu vực mô tả chi tiết sản phẩm kết thúc --> */}
       </Col>
-      {/* <!-- Sidebar Area Start --> */}
-
-      <SidebarArea
-        min={minPrice}
-        max={maxPrice}
-        handleCategoryChange={handleCategoryChange}
-        handleWeightChange={handleWeightChange}
-        handleColorChange={handleColorChange}
-        handleTagsChange={handleTagsChange}
-        handlePriceChange={handlePriceChange}
-        selectedCategory={selectedCategory}
-        selectedWeight={selectedWeight}
-        selectedColor={selectedColor}
-        selectedTags={selectedTags}
-        none={none}
-        order={order}
-      />
     </>
   );
 };

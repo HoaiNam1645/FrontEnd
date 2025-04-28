@@ -52,7 +52,7 @@ function HeaderManu() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/categories/getAll');
+        const response = await axios.get('http://localhost:5001/api/categories/getAll');
         if (response.data.success) {
           setCategories(response.data.data);
           // Lấy sản phẩm cho mỗi danh mục
@@ -69,7 +69,7 @@ function HeaderManu() {
 
     const fetchProductsByCategory = async (categoryId: string) => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/products/getAll?category=${categoryId}`);
+        const response = await axios.get(`http://localhost:5001/api/products/getAll?category=${categoryId}`);
         if (response.data.success) {
           setProducts(prev => ({
             ...prev,

@@ -21,7 +21,7 @@ interface Admin {
 const listAdmin = async () => {
   try {
     const token = localStorage.getItem("login_token");
-    const response = await axios.get("http://localhost:5000/api/users/getAll", {
+    const response = await axios.get("http://localhost:5001/api/users/getAll", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -51,7 +51,7 @@ function AdminList() {
     if (window.confirm('Bạn có chắc chắn muốn xóa admin này không?')) {
       try {
         const token = localStorage.getItem("login_token");
-        await axios.delete(`http://localhost:5000/api/users/delete/${_id}`, {
+        await axios.delete(`http://localhost:5001/api/users/delete/${_id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

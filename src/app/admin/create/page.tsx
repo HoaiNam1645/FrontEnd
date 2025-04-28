@@ -109,7 +109,7 @@ export default function CreateUser() {
     setIsLoading(true);
     try {
       const { confirmPassword, ...submitData } = formData;
-      const response = await axios.post('http://localhost:5000/api/users/create', submitData);
+      const response = await axios.post('http://localhost:5001/api/users/create', submitData);
 
       if (response.status === 201) {
         toast.success("Tạo admin thành công!");

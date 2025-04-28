@@ -27,7 +27,7 @@ export default function CreateCategory() {
         formDataToSend.append("image", formData.image);
       }
       
-      await axios.post("http://localhost:5000/api/categories/create", formDataToSend, {
+      await axios.post("http://localhost:5001/api/categories/create", formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

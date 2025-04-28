@@ -34,7 +34,7 @@ export default function EditCategoryForm({ id }: EditCategoryFormProps) {
   useEffect(() => {
     const fetchCategory = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/categories/get/${id}`);
+        const response = await axios.get(`http://localhost:5001/api/categories/get/${id}`);
         setFormData(response.data.data);
         setPreviewImage(response.data.data.image_url);
       } catch (error: any) {
@@ -58,7 +58,7 @@ export default function EditCategoryForm({ id }: EditCategoryFormProps) {
         formDataToSend.append("image", image);
       }
 
-        await axios.post(`http://localhost:5000/api/categories/update/${id}`, formDataToSend, {
+        await axios.post(`http://localhost:5001/api/categories/update/${id}`, formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

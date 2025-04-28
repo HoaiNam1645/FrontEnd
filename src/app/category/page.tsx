@@ -16,7 +16,7 @@ interface Category {
 
 const listCategories = async () => {
   try {
-    const response = await axios.get("http://localhost:5000/api/categories/getAll");
+    const response = await axios.get("http://localhost:5001/api/categories/getAll");
     return response.data.data;
   } catch (error) {
     console.error("Lỗi khi lấy danh sách danh mục:", error);
@@ -39,7 +39,7 @@ export default function CategoryList() {
   const handleDelete = async (_id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa danh mục này không?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/categories/delete/${_id}`);
+        await axios.delete(`http://localhost:5001/api/categories/delete/${_id}`);
         setCategories(categories.filter(category => category._id !== _id));
         toast.success('Xóa danh mục thành công!');
       } catch (error) {

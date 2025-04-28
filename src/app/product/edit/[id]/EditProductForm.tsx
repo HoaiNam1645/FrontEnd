@@ -49,8 +49,8 @@ export default function EditProductForm({ id }: EditProductFormProps) {
     const fetchData = async () => {
       try {
         const [productResponse, categoriesResponse] = await Promise.all([
-          axios.get(`http://localhost:5000/api/products/get/${id}`),
-          axios.get("http://localhost:5000/api/categories/getAll")
+          axios.get(`http://localhost:5001/api/products/get/${id}`),
+          axios.get("http://localhost:5001/api/categories/getAll")
         ]);
         
         const productData = productResponse.data.data;
@@ -83,7 +83,7 @@ export default function EditProductForm({ id }: EditProductFormProps) {
         formDataToSend.append("image", image);
       }
 
-      await axios.post(`http://localhost:5000/api/products/update/${id}`, formDataToSend, {
+      await axios.post(`http://localhost:5001/api/products/update/${id}`, formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

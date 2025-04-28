@@ -1,90 +1,70 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, FormEvent } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import ItemCard from "../product-item/ItemCard";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
-import { removeItem } from "../../store/reducers/cartSlice";
+import { removeCartItemAsync, fetchCartFromAPI, createOrderAsync } from "../../store/reducers/cartSlice";
 import { Fade } from "react-awesome-reveal";
-import useSWR from "swr";
-import fetcher from "../fetcher-api/Fetcher";
 import Spinner from "../button/Spinner";
 import DiscountCoupon from "../discount-coupon/DiscountCoupon";
 import QuantitySelector from "../quantity-selector/QuantitySelector";
 import Link from "next/link";
 import { productService, Product } from "../../services/productService";
-
-interface Country {
-  id: string;
-  name: any;
-  iso2: string;
-}
-
-interface State {
-  id: string;
-  name: any;
-  state_code: string;
-}
+import { AppDispatch } from "../../store";
+import { CreateOrderRequest, OrderItemRequest, CartItem } from "../../services/cartService";
+import { useRouter } from "next/navigation";
+import { showSuccessToast } from "../toast-popup/Toastify";
 
 const Cart = ({
   onSuccess = () => {},
   hasPaginate = false,
   onError = () => {},
 }) => {
+  const dispatch = useDispatch<AppDispatch>();
   const cartItems = useSelector((state: RootState) => state.cart.items);
-  const dispatch = useDispatch();
-  const [filteredCountryData, setFilteredCountryData] = useState<Country[]>([]);
-  const [filteredStateData, setFilteredStateData] = useState<State[]>([]);
-  const [loadingStates, setLoadingStates] = useState(false);
+  const loading = useSelector((state: RootState) => state.cart.loading);
+  const error = useSelector((state: RootState) => state.cart.error);
+  
   const [subTotal, setSubTotal] = useState(0);
   const [vat, setVat] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [newProducts, setNewProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const { data: country } = useSWR("/api/country", fetcher, {
-    onSuccess,
-    onError,
-  });
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [recipientName, setRecipientName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [address, setAddress] = useState('');
+  const router = useRouter();
+  
+  // Lấy user ID từ localStorage khi component mount
+  useEffect(() => {
+    const fetchCartData = async () => {
+      try {
+        // Lấy thông tin người dùng từ localStorage
+        const userInfoStr = localStorage.getItem('login_user');
+        if (!userInfoStr) {
+          console.log('Người dùng chưa đăng nhập');
+          return;
+        }
+        
+        const userInfo = JSON.parse(userInfoStr);
+        if (!userInfo || !userInfo.id) {
+          console.log('Không tìm thấy ID người dùng');
+          return;
+        }
+        
+        console.log('Đang lấy giỏ hàng cho người dùng ID:', userInfo.id);
+        await dispatch(fetchCartFromAPI(userInfo.id));
+      } catch (error) {
+        console.error('Lỗi khi lấy giỏ hàng:', error);
+      }
+    };
+    
+    fetchCartData();
+  }, [dispatch]);
 
   useEffect(() => {
-    if (country) {
-      setFilteredCountryData(
-        country.map((country: any) => ({
-          id: country.id,
-          countryName: country.name,
-          iso2: country.iso2,
-        }))
-      );
-    }
-  }, [country]);
-
-  const handleCountryChange = async (e: any) => {
-    const { value } = e.target;
-    setLoadingStates(true);
-    try {
-      const response = await fetcher(`/api/state?country_code=${value}`);
-      setFilteredStateData(
-        response.map((state: any) => ({
-          id: state.id,
-          StateName: state.name,
-          state_code: state.state_code,
-        }))
-      );
-    } catch (error) {
-      console.error("Lỗi khi tải dữ liệu tỉnh/thành:", error);
-    } finally {
-      setLoadingStates(false);
-    }
-  };
-
-  const handleStateChange = async (e: any) => {
-    const { value, options, selectedIndex } = e.target;
-    const stateName = options[selectedIndex].text;
-  };
-
-  useEffect(() => {
-    if (cartItems.length === 0) {
+    if (loading || cartItems.length === 0) {
       setSubTotal(0);
       setVat(0);
       return;
@@ -98,7 +78,7 @@ const Cart = ({
     // Calculate VAT
     const vatAmount = subtotal * 0.1; // 10% VAT cho Việt Nam
     setVat(vatAmount);
-  }, [cartItems]);
+  }, [cartItems, loading]);
 
   const handleDiscountApplied = (discount) => {
     setDiscount(discount);
@@ -107,13 +87,29 @@ const Cart = ({
   const discountAmount = subTotal * (discount / 100);
   const total = subTotal + vat - discountAmount;
 
-  const handleRemoveFromCart = (item: any) => {
-    dispatch(removeItem(item._id));
+  const handleRemoveFromCart = (item: CartItem) => {
+    // Xác nhận trước khi xóa
+    const isConfirmed = window.confirm(`Bạn có chắc muốn xóa sản phẩm "${item.name}" khỏi giỏ hàng?`);
+    
+    if (!isConfirmed) {
+      return;
+    }
+    
+    console.log('Xóa sản phẩm với cartItemId:', item._id);
+    
+    dispatch(removeCartItemAsync(item._id))
+      .unwrap()
+      .then(() => {
+        alert("Xóa sản phẩm khỏi giỏ hàng thành công!");
+      })
+      .catch((error) => {
+        alert(error || "Có lỗi xảy ra khi xóa sản phẩm");
+      });
   };
 
   useEffect(() => {
     const loadProducts = async () => {
-      setLoading(true);
+      setProductsLoading(true);
       try {
         const products = await productService.getAllProducts();
         setNewProducts(products);
@@ -122,14 +118,71 @@ const Cart = ({
         // Sử dụng dữ liệu mẫu nếu có lỗi
         setNewProducts(productService.getSampleProducts());
       } finally {
-        setLoading(false);
+        setProductsLoading(false);
       }
     };
     
     loadProducts();
   }, []);
 
-  if (loading) {
+  const handleCreateOrder = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    
+    if (!recipientName || !phoneNumber || !address) {
+      alert("Vui lòng nhập đầy đủ thông tin giao hàng!");
+      return;
+    }
+    
+    if (cartItems.length === 0) {
+      alert("Giỏ hàng của bạn đang trống!");
+      return;
+    }
+    
+    // Lấy thông tin người dùng từ localStorage
+    const userInfoStr = localStorage.getItem('login_user');
+    if (!userInfoStr) {
+      alert('Bạn cần đăng nhập để tạo đơn hàng');
+      return;
+    }
+    
+    const userInfo = JSON.parse(userInfoStr);
+    if (!userInfo || !userInfo.id) {
+      alert('Không tìm thấy ID người dùng');
+      return;
+    }
+    
+    // Chuẩn bị danh sách sản phẩm cho đơn hàng
+    const orderItemList: OrderItemRequest[] = cartItems.map(item => ({
+      productId: item.productId,
+      quantity: item.quantity,
+      name: item.name,
+      price: item.price
+    }));
+    
+    // Tạo đối tượng đơn hàng
+    const orderData: CreateOrderRequest = {
+      userId: userInfo.id,
+      totalAmount: total,
+      status: "pending",
+      address,
+      phoneNumber,
+      recipientName,
+      orderItemList
+    };
+    
+    dispatch(createOrderAsync(orderData))
+      .unwrap()
+      .then(() => {
+        // Chuyển hướng đến trang xác nhận đơn hàng hoặc trang chủ
+        router.push('/order-success');
+      })
+      .catch((error) => {
+        console.error('Lỗi khi tạo đơn hàng:', error);
+        alert(`Đã xảy ra lỗi khi tạo đơn hàng: ${error}`);
+      });
+  };
+
+  if (productsLoading) {
     return (
       <div>
         <Spinner />
@@ -142,7 +195,7 @@ const Cart = ({
       <section className="gi-cart-section padding-tb-40">
         <h2 className="d-none">Cart Page</h2>
         <div className="container">
-          {cartItems.length === 0 ? (
+          {!loading && cartItems.length === 0 && !error ? (
             <div
               style={{
                 textAlign: "center",
@@ -165,67 +218,50 @@ const Cart = ({
                       <h3 className="gi-sidebar-title">Tóm tắt</h3>
                     </div>
                     <div className="gi-sb-block-content">
-                      <h4 className="gi-ship-title">Ước tính vận chuyển</h4>
+                      <h4 className="gi-ship-title">Thông tin giao hàng</h4>
                       <div className="gi-cart-form">
-                        <p>Nhập điểm đến của bạn để nhận ước tính vận chuyển</p>
+                        <p>Nhập thông tin giao hàng của bạn</p>
                         <form action="#" method="post">
                           <span className="gi-cart-wrap">
-                            <label>Quốc gia *</label>
-                            <span className="gi-cart-select-inner">
-                              <select
-                                name="gi_cart_country"
-                                id="gi-cart-select-country"
-                                className="gi-cart-select"
-                                defaultValue=""
-                                onChange={handleCountryChange}
-                              >
-                                <option value="" disabled>
-                                  Quốc gia
-                                </option>
-                                {filteredCountryData.map(
-                                  (country: any, index: number) => (
-                                    <option key={index} value={country.iso2}>
-                                      {country.countryName}
-                                    </option>
-                                  )
-                                )}
-                              </select>
-                            </span>
-                          </span>
-                          <span className="gi-cart-wrap">
-                            <label>Tỉnh/Thành phố</label>
-                            <span className="gi-cart-select-inner">
-                              <select
-                                name="state"
-                                id="gi-select-state"
-                                className="gi-register-select"
-                                onChange={handleStateChange}
-                              >
-                                <option value="" disabled>
-                                  Tỉnh/Thành phố
-                                </option>
-                                {loadingStates ? (
-                                  <option disabled>Đang tải...</option>
-                                ) : (
-                                  filteredStateData.map((state: any, index) => (
-                                    <option
-                                      key={index}
-                                      value={state.state_code}
-                                    >
-                                      {state.StateName}
-                                    </option>
-                                  ))
-                                )}
-                              </select>
-                            </span>
-                          </span>
-                          <span className="gi-cart-wrap">
-                            <label>Mã bưu điện</label>
+                            <label>Họ và tên người nhận *</label>
                             <input
                               type="text"
-                              name="postalcode"
-                              placeholder="Mã bưu điện"
+                              name="recipient_name"
+                              placeholder="Nhập họ và tên người nhận"
+                              required
+                              value={recipientName}
+                              onChange={(e) => setRecipientName(e.target.value)}
                             />
+                          </span>
+                          <span className="gi-cart-wrap">
+                            <label>Số điện thoại người nhận *</label>
+                            <input
+                              type="tel"
+                              name="recipient_phone"
+                              placeholder="Nhập số điện thoại người nhận"
+                              required
+                              value={phoneNumber}
+                              onChange={(e) => setPhoneNumber(e.target.value)}
+                            />
+                          </span>
+                          <span className="gi-cart-wrap">
+                            <label>Địa chỉ giao hàng *</label>
+                            <textarea
+                              name="delivery_address"
+                              placeholder="Nhập địa chỉ giao hàng đầy đủ"
+                              rows={3}
+                              required
+                              style={{
+                                width: '100%',
+                                padding: '8px 15px',
+                                borderRadius: '5px',
+                                border: '1px solid #e5e5e5',
+                                fontSize: '14px',
+                                resize: 'none'
+                              }}
+                              value={address}
+                              onChange={(e) => setAddress(e.target.value)}
+                            ></textarea>
                           </span>
                         </form>
                       </div>
@@ -317,64 +353,85 @@ const Cart = ({
                               </tr>
                             </thead>
                             <tbody>
-                              {cartItems.map((item: any, index: number) => (
-                                <tr key={index}>
-                                  <td
-                                    data-label="Sản phẩm"
-                                    className="gi-cart-pro-name"
-                                  >
-                                    <Link href={`/product/${item._id}`}>
-                                      <img
-                                        className="gi-cart-pro-img mr-4"
-                                        src={item.image_url}
-                                        alt={item.name}
-                                      />
-                                      {item.name}
-                                    </Link>
+                              {loading ? (
+                                <tr>
+                                  <td colSpan={5} style={{ textAlign: 'center' }}>
+                                    <Spinner />
+                                    <p>Đang tải giỏ hàng...</p>
                                   </td>
-                                  <td
-                                    data-label="Giá"
-                                    className="gi-cart-pro-price"
-                                  >
-                                    <span className="amount">
+                                </tr>
+                              ) : error ? (
+                                <tr>
+                                  <td colSpan={5} style={{ textAlign: 'center', color: 'red' }}>
+                                    Có lỗi khi tải giỏ hàng: {error}
+                                  </td>
+                                </tr>
+                              ) : cartItems && cartItems.length > 0 ? (
+                                cartItems.map((item: CartItem, index: number) => (
+                                  <tr key={index}>
+                                    <td
+                                      data-label="Sản phẩm"
+                                      className="gi-cart-pro-name"
+                                    >
+                                      <Link href={`/product-left-sidebar/${item.productId}`}>
+                                        <img
+                                          className="gi-cart-pro-img mr-4"
+                                          src={item.image_url}
+                                          alt={item.name}
+                                        />
+                                        {item.name}
+                                      </Link>
+                                    </td>
+                                    <td
+                                      data-label="Giá"
+                                      className="gi-cart-pro-price"
+                                    >
+                                      <span className="amount">
+                                        {new Intl.NumberFormat('vi-VN', { 
+                                          style: 'currency', 
+                                          currency: 'VND' 
+                                        }).format(item.price)}
+                                      </span>
+                                    </td>
+                                    <td
+                                      data-label="Số lượng"
+                                      className="gi-cart-pro-qty"
+                                      style={{ textAlign: "center" }}
+                                    >
+                                      <div className="cart-qty-plus-minus">
+                                        <QuantitySelector
+                                          quantity={item.quantity}
+                                          id={item._id}
+                                        />
+                                      </div>
+                                    </td>
+                                    <td
+                                      data-label="Thành tiền"
+                                      className="gi-cart-pro-subtotal"
+                                    >
                                       {new Intl.NumberFormat('vi-VN', { 
                                         style: 'currency', 
                                         currency: 'VND' 
-                                      }).format(item.price)}
-                                    </span>
-                                  </td>
-                                  <td
-                                    data-label="Số lượng"
-                                    className="gi-cart-pro-qty"
-                                    style={{ textAlign: "center" }}
-                                  >
-                                    <div className="cart-qty-plus-minus">
-                                      <QuantitySelector
-                                        quantity={item.quantity}
-                                        id={item._id}
-                                      />
-                                    </div>
-                                  </td>
-                                  <td
-                                    data-label="Thành tiền"
-                                    className="gi-cart-pro-subtotal"
-                                  >
-                                    {new Intl.NumberFormat('vi-VN', { 
-                                      style: 'currency', 
-                                      currency: 'VND' 
-                                    }).format(item.price * item.quantity)}
-                                  </td>
-                                  <td
-                                    onClick={() => handleRemoveFromCart(item)}
-                                    data-label="Remove"
-                                    className="gi-cart-pro-remove"
-                                  >
-                                    <a href="#">
-                                      <i className="gicon gi-trash-o"></i>
-                                    </a>
+                                      }).format(item.price * item.quantity)}
+                                    </td>
+                                    <td
+                                      onClick={() => handleRemoveFromCart(item)}
+                                      data-label="Remove"
+                                      className="gi-cart-pro-remove"
+                                    >
+                                      <a href="#">
+                                        <i className="gicon gi-trash-o"></i>
+                                      </a>
+                                    </td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan={5} style={{ textAlign: 'center' }}>
+                                    Giỏ hàng trống
                                   </td>
                                 </tr>
-                              ))}
+                              )}
                             </tbody>
                           </table>
                         </div>
@@ -382,8 +439,8 @@ const Cart = ({
                           <div className="col-lg-12">
                             <div className="gi-cart-update-bottom">
                               <Link href="/">Tiếp tục mua sắm</Link>
-                              <Link href="/checkout" className="gi-btn-2">
-                                Thanh toán
+                              <Link href="/checkout" className="gi-btn-2" onClick={handleCreateOrder}>
+                                Tạo Đơn Hàng
                               </Link>
                             </div>
                           </div>

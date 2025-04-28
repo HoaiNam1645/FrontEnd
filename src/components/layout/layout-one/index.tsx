@@ -5,6 +5,7 @@ import Toastify from "../../toast-popup/Toastify";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { setUserData } from "@/store/reducers/registrationSlice";
+import ChatBox from "@/components/chat/ChatBox";
 
 function LayoutOne({ children }) {
   const dispatch = useDispatch();
@@ -42,6 +43,7 @@ function LayoutOne({ children }) {
       {children}
       <Footer />
       <Toastify />
+      <ChatBox />
     </>
   );
 }

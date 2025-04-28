@@ -59,9 +59,9 @@ const RelatedProduct = ({
                 >
                   <>
                     <h2 className="gi-title">
-                      Related <span>Products</span>
+                    liên quan <span>Sản phẩm</span>
                     </h2>
-                    <p>Browse The Collection of Top Products</p>
+                    <p>Xem các sản phẩm liên quan</p>
                   </>
                 </FadeComponent>
 

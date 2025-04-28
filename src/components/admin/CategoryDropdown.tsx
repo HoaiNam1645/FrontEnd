@@ -18,7 +18,7 @@ export default function CategoryDropdown() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/categories/getAll");
+        const response = await axios.get("http://localhost:5001/api/categories/getAll");
         setCategories(response.data.data);
       } catch (error) {
         console.error("Error fetching categories:", error);

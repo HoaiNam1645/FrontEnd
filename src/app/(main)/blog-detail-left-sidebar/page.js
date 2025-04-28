@@ -1,23 +1,20 @@
 import { Row } from 'react-bootstrap'
-import BlogDetail from "@/components/blog-detail/BlogDetail"
 import Breadcrumb from '@/components/breadcrumb/Breadcrumb'
+import NewsDetail from '@/components/blog-detail/NewsDetail'
 
-const page = () => {
+const BlogDetailLeftSidebar = () => {
     return (
         <>
-
-
-            <Breadcrumb title={"Blog Page"} />
+            <Breadcrumb title={"Chi Tiết Tin Tức"} />
             <section className="gi-blog padding-tb-40">
                 <div className="container">
                     <Row>
-                        <BlogDetail order={"order-lg-last order-md-first"} />
+                        <NewsDetail order={"order-lg-last order-md-first"} />
                     </Row>
                 </div>
             </section>
-
         </>
     )
 }
 
-export default page
+export default BlogDetailLeftSidebar

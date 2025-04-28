@@ -20,30 +20,51 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const user = useSelector((state: RootState) => state.registration.user) as User | null;
   const isAuthenticated = useSelector((state: RootState) => state.registration.isAuthenticated);
-
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  
   useEffect(() => {
-    console.log("AdminRoute - User:", user);
-    console.log("AdminRoute - isAuthenticated:", isAuthenticated);
-    console.log("AdminRoute - User role:", user?.role);
-
-    // Check authentication and admin role
-    if (!isAuthenticated) {
-      console.log("AdminRoute - Not authenticated, redirecting to login");
-      // router.push('/login');
-      window.location.href = '/login';
-      return;
+    // Phương pháp an toàn để kiểm tra quyền truy cập
+    const checkAuth = () => {
+      console.log("AdminRoute - Checking auth:", { isAuthenticated, userRole: user?.role });
+      
+      if (!isAuthenticated) {
+        console.log("AdminRoute - Not authenticated");
+        localStorage.setItem('redirectToLogin', 'true');
+        setIsAuthorized(false);
+        return;
+      }
+      
+      if (user && user.role !== 'admin') {
+        console.log("AdminRoute - Not admin");
+        localStorage.setItem('redirectToHome', 'true');
+        setIsAuthorized(false);
+        return;
+      }
+      
+      console.log("AdminRoute - Admin role confirmed");
+      setIsAuthorized(true);
+    };
+    
+    const timeoutId = setTimeout(checkAuth, 100);
+    return () => clearTimeout(timeoutId);
+  }, [isAuthenticated, user]);
+  
+  // Xử lý chuyển hướng dựa trên quyền truy cập
+  useEffect(() => {
+    if (isAuthorized === false) {
+      setLoading(false);
+      
+      if (localStorage.getItem('redirectToLogin') === 'true') {
+        localStorage.removeItem('redirectToLogin');
+        window.location.replace('/login');
+      } else if (localStorage.getItem('redirectToHome') === 'true') {
+        localStorage.removeItem('redirectToHome');
+        window.location.replace('/');
+      }
+    } else if (isAuthorized === true) {
+      setLoading(false);
     }
-
-    if (user && user.role !== 'admin') {
-      console.log("AdminRoute - Not admin, redirecting to home");
-      // router.push('/');
-      window.location.href = '/';
-      return;
-    }
-
-    console.log("AdminRoute - Admin role confirmed, loading admin page");
-    setLoading(false);
-  }, [isAuthenticated, user, router]);
+  }, [isAuthorized]);
 
   if (loading) {
     return (
@@ -52,8 +73,9 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
       </div>
     );
   }
-
-  return <>{children}</>;
+  
+  // Chỉ render nội dung nếu được phép truy cập
+  return isAuthorized ? <>{children}</> : null;
 };
 
 export default AdminRoute; 

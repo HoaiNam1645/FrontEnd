@@ -143,7 +143,7 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                             </Link>
                           </li>
                           <li>
-                            <Link className="dropdown-item" href="/orders">
+                            <Link className="dropdown-item" href="/track-order">
                               Đơn hàng
                             </Link>
                           </li>
@@ -160,11 +160,11 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                               Đăng ký
                             </Link>
                           </li>
-                          <li>
+                          {/* <li>
                             <Link className="dropdown-item" href="/checkout">
                               Thanh toán
                             </Link>
-                          </li>
+                          </li> */}
                           <li>
                             <Link className="dropdown-item" href="/login">
                               Đăng nhập

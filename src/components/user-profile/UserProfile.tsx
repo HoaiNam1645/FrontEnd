@@ -33,7 +33,7 @@ const UserProfile = () => {
         if (!idUser) {
           throw new Error("Không tìm thấy ID người dùng");
         }
-        const response = await axios.get(`http://localhost:5000/api/users/get/${idUser}`);
+        const response = await axios.get(`http://localhost:5001/api/users/get/${idUser}`);
         setUserData(response.data.data);
       } catch (error: any) {
         showErrorToast(error.response?.data?.message || "Không thể tải thông tin người dùng");

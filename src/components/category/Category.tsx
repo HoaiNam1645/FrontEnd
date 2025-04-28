@@ -32,7 +32,7 @@ const Category = ({
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/categories/getAll');
+        const response = await axios.get('http://localhost:5001/api/categories/getAll');
         if (response.data.success) {
           setCategories(response.data.data);
           onSuccess();

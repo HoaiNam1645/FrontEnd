@@ -10,73 +10,60 @@ import { login } from "@/store/reducers/registrationSlice";
 import { RootState } from "@/store";
 import axios from "axios";
 
-interface Registration {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-  city: string;
-  postCode: string;
-  country: string;
-  state: string;
-  password: string;
-  uid: any;
-}
-
 const LoginPage = () => {
+  // State declarations
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [validated, setValidated] = useState(false);
+  
+  // Redux and Router
   const router = useRouter();
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(
     (state: RootState) => state.registration.isAuthenticated
   );
 
-  useEffect(() => {
-    const storedRegistrations = JSON.parse(
-      localStorage.getItem("registrationData") || "[]"
-    );
-    setRegistrations(storedRegistrations);
-  }, []);
-
+  // Authentication check effect
   useEffect(() => {
     if (isAuthenticated) {
       router.push("/");
     }
   }, [isAuthenticated, router]);
 
+  // Redirect check effect
+  useEffect(() => {
+    const redirectPath = localStorage.getItem('redirectAfterLogin');
+    if (redirectPath) {
+      localStorage.removeItem('redirectAfterLogin');
+      window.location.replace(redirectPath);
+    }
+  }, []);
+
+  // Login form submit handler
   const handleLogin = async (e: any) => {
     e.preventDefault();
 
     const form = e.currentTarget;
     if (form.checkValidity() === false) {
       e.stopPropagation();
+      setValidated(true);
       return;
     }
 
+    setValidated(true);
+
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/login", {
+      const response = await axios.post("http://localhost:5001/api/auth/login", {
         email,
         password,
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response data:", response.data.data);
-
-      // Kiểm tra nếu API trả về thành công
       if (response.data.success && response.data.data) {
         const { token, user } = response.data.data;
 
         if (!token || !user) {
           throw new Error("Dữ liệu trả về không hợp lệ");
         }
-
-        // Hiển thị thông tin về vai trò để debug
-        console.log("User role:", user.role);
-        console.log("User data:", user);
 
         // Lưu token & user vào localStorage
         localStorage.setItem("login_token", token);
@@ -87,28 +74,24 @@ const LoginPage = () => {
 
         showSuccessToast("Đăng nhập thành công");
         
-        // Kiểm tra role để điều hướng - Sử dụng window.location thay vì router.push
-        if (user.role === 'admin') {
-          console.log("Chuyển hướng đến trang admin");
-          // router.push("/admin");
-          window.location.href = "/admin";
-        } else {
-          console.log("Chuyển hướng đến trang chủ");
-          // router.push("/");
-          window.location.href = "/";
-        }
+        // Set redirect based on role
+        const redirectPath = user.role === 'admin' ? '/admin' : '/';
+        localStorage.setItem('redirectAfterLogin', redirectPath);
+        
+        // Refresh page to trigger redirect
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       }
     } catch (error: any) {
       console.error("Login error:", error.response?.data?.message || "Đăng nhập thất bại");
       showErrorToast(error.response?.data?.message || "Đăng nhập thất bại");
     }
-
-    setValidated(true);
   };
 
   return (
     <>
-      <Breadcrumb title={"Login Page"} />
+      <Breadcrumb title="Login Page" />
       <section className="gi-login padding-tb-40">
         <Container>
           <div className="section-title-2">
@@ -125,22 +108,21 @@ const LoginPage = () => {
                     <Form
                       noValidate
                       validated={validated}
-                      action="#"
-                      method="post"
+                      onSubmit={handleLogin}
                     >
                       <span className="gi-login-wrap">
                         <label>Email Address*</label>
                         <Form.Group>
                           <Form.Control
                             type="text"
-                            name="name"
+                            name="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="Nhập địa chỉ email của bạn..."
                             required
                           />
                           <Form.Control.Feedback type="invalid">
-                            Vui lòng nhập đúng tên người dùng.
+                            Vui lòng nhập đúng email.
                           </Form.Control.Feedback>
                         </Form.Group>
                       </span>
@@ -154,7 +136,7 @@ const LoginPage = () => {
                           <Form.Control
                             type="password"
                             name="password"
-                            min={6}
+                            minLength={6}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Nhập mật khẩu của bạn..."
@@ -173,12 +155,11 @@ const LoginPage = () => {
                       </span>
                       <span className="gi-login-wrap gi-login-btn">
                         <span>
-                          <a href="/register" className="">
+                          <Link href="/register">
                             Tạo tài khoản?
-                          </a>
+                          </Link>
                         </span>
                         <button
-                          onClick={handleLogin}
                           className="gi-btn-1 btn"
                           type="submit"
                         >
@@ -190,16 +171,6 @@ const LoginPage = () => {
                 </div>
               </div>
             </div>
-            {/* <div className="gi-login-box d-n-991">
-              <div className="gi-login-img">
-                <img
-                  src={
-                    process.env.NEXT_PUBLIC_URL + "/assets/img/common/login.png"
-                  }
-                  alt="login"
-                />
-              </div>
-            </div> */}
           </div>
         </Container>
       </section>

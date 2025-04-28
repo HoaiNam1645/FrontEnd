@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
-import { removeItem, fetchUserCartAsync, removeCartItemAsync } from "../../store/reducers/cartSlice";
+import { removeItem, fetchUserCartAsync, removeCartItemAsync, fetchCartFromAPI } from "../../store/reducers/cartSlice";
 import Link from "next/link";
 import QuantitySelector from "../quantity-selector/QuantitySelector";
 import { showSuccessToast } from "../toast-popup/Toastify";
 import { Product } from "@/services/productService";
 import Spinner from "../button/Spinner";
 import { AppDispatch } from "@/store";
+import { CartItem } from "@/services/cartService";
 
 interface User {
   _id: string;
@@ -28,7 +29,7 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
   // Lấy giỏ hàng từ API khi người dùng đã đăng nhập
   useEffect(() => {
     if (isAuthenticated && user?._id && isCartOpen) {
-      dispatch(fetchUserCartAsync(user._id));
+      dispatch(fetchCartFromAPI(user._id));
     }
   }, [isAuthenticated, user, isCartOpen, dispatch]);
 
@@ -54,9 +55,18 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
     e.preventDefault();
   };
 
-  const handleRemoveFromCart = (item: Product & { quantity: number }) => {
-    if (isAuthenticated && cartId) {
-      dispatch(removeCartItemAsync({ cartId, productId: item._id }))
+  const handleRemoveFromCart = (item: CartItem) => {
+    // Xác nhận trước khi xóa
+    const isConfirmed = window.confirm(`Bạn có chắc muốn xóa sản phẩm "${item.name}" khỏi giỏ hàng?`);
+    
+    if (!isConfirmed) {
+      return;
+    }
+    
+    console.log('Xóa sản phẩm với cartItemId:', item._id);
+    
+    if (isAuthenticated) {
+      dispatch(removeCartItemAsync(item._id))
         .unwrap()
         .then(() => {
           showSuccessToast("Xóa sản phẩm khỏi giỏ hàng thành công!");
@@ -66,8 +76,6 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
             icon: false,
             type: "error"
           });
-          // Fallback to local removal if API fails
-          dispatch(removeItem(item._id));
         });
     } else {
       dispatch(removeItem(item._id));
@@ -109,17 +117,17 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
               </div>
             ) : (
               <ul className="gi-cart-pro-items">
-                {cartItems.map((item: any, index: number) => (
+                {cartItems.map((item: CartItem, index: number) => (
                   <li key={index}>
                     <Link
                       onClick={handleSubmit}
-                      href={`/product/${item._id}`}
+                      href={`/product/${item.productId}`}
                       className="gi-pro-img"
                     >
                       <img src={item.image_url} alt={item.name} />
                     </Link>
                     <div className="gi-pro-content">
-                      <Link href={`/product/${item._id}`} className="cart-pro-title">
+                      <Link href={`/product/${item.productId}`} className="cart-pro-title">
                         {item.name}
                       </Link>
                       <span className="cart-price">

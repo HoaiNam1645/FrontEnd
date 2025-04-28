@@ -19,7 +19,7 @@ interface User {
 
 const listUsers = async () => {
   try {
-    const response = await axios.get("http://localhost:5000/api/users/getAll");
+    const response = await axios.get("http://localhost:5001/api/users/getAll");
     console.log('resposne', response.data.data);
 
     return response.data.data;
@@ -44,7 +44,7 @@ export default function UserList() {
   const handleDelete = async (_id: string) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này không?')) {
       try {
-        await axios.delete(`http://localhost:5000/api/users/delete/${_id}`);
+        await axios.delete(`http://localhost:5001/api/users/delete/${_id}`);
         // Cập nhật danh sách users sau khi xóa thành công
         setUsers(users.filter(user => user._id !== _id));
         alert('Xóa người dùng thành công!');

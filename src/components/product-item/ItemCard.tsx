@@ -6,7 +6,8 @@ import {
   addItem,
   setItems,
   updateItemQuantity,
-  addToCartAsync
+  addToCartAsync,
+  fetchCartFromAPI
 } from "../../store/reducers/cartSlice";
 import Link from "next/link";
 import { showSuccessToast } from "../toast-popup/Toastify";
@@ -34,15 +35,28 @@ const ItemCard = ({ data }: ItemCardProps) => {
     (state: RootState) => state.wishlist.wishlist
   );
   const cartItems = useSelector((state: RootState) => state.cart.items);
-  const user = localStorage.getItem('login_user') ? JSON.parse(localStorage.getItem('login_user') || '{}') : null;
+  const isAuthenticated = useSelector((state: RootState) => state.registration.isAuthenticated);
+  const userFromStore = useSelector((state: RootState) => state.registration.user);
+  
+  // Lấy user từ cả localStorage và Redux store để đảm bảo luôn có dữ liệu
+  const userFromLocal = typeof window !== 'undefined' ? 
+    JSON.parse(localStorage.getItem('login_user') || '{}') : null;
+  
+  // Ưu tiên dùng user từ store, nếu không có thì dùng từ localStorage
+  const user = userFromStore || userFromLocal;
+  
   console.log('user', user);
-  console.log('localStorage', JSON.parse(localStorage.getItem('login_user') || '{}'));
   
   const cartId = useSelector((state: RootState) => state.cart.cartId);
 
   // Thêm state để theo dõi lỗi hình ảnh
   const [imgError, setImgError] = useState(false);
   const defaultImg = '/assets/img/product-images/1_1.jpg';
+
+  // Tạo đường dẫn chi tiết sản phẩm
+  const getProductDetailUrl = () => {
+    return `/product-left-sidebar/${data._id}`;
+  };
 
   // Xử lý đường dẫn hình ảnh
   const getImageUrl = (url: string | undefined) => {
@@ -87,7 +101,7 @@ const ItemCard = ({ data }: ItemCardProps) => {
   }, [dispatch]);
 
   const handleCart = (data: Product) => {
-    if (!user || !user.id) {
+    if (!isAuthenticated) {
       showSuccessToast("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!", {
         icon: false,
         type: "error"
@@ -95,69 +109,34 @@ const ItemCard = ({ data }: ItemCardProps) => {
       return;
     }
 
-    if (!user || !user.id) {
-      showSuccessToast("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.", {
+    // Kiểm tra user ID
+    const userId = user?.id || user?._id;
+    if (!userId) {
+      showSuccessToast("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại!", {
         icon: false,
         type: "error"
       });
       return;
     }
 
-    const isItemInCart = cartItems.some((item) => item._id === data._id);
-
-    if (!isItemInCart) {
-      // Sử dụng API khi đã đăng nhập
-      dispatch(addToCartAsync({
-        userId: user.id,
-        productId: data._id,
-        quantity: 1
-      }))
-      .unwrap()
-      .then(() => {
-        // Cập nhật UI sau khi API thành công
-        dispatch(addItem({ ...data, quantity: 1 }));
-        showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
-      })
-      .catch((error) => {
-        showSuccessToast(error.message || "Có lỗi xảy ra khi thêm vào giỏ hàng", {
-          icon: false,
-          type: "error"
-        });
+    // Luôn sử dụng API để thêm/cập nhật giỏ hàng
+    dispatch(addToCartAsync({
+      userId: userId,
+      productId: data._id,
+      quantity: 1
+    }))
+    .unwrap()
+    .then(() => {
+      // Sau khi API thành công, cập nhật lại toàn bộ giỏ hàng từ server
+      dispatch(fetchCartFromAPI(userId));
+      showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
+    })
+    .catch((error) => {
+      showSuccessToast(error.message || "Có lỗi xảy ra khi thêm vào giỏ hàng", {
+        icon: false,
+        type: "error"
       });
-    } else {
-      // Cập nhật số lượng sản phẩm đã có trong giỏ hàng
-      const existingItem = cartItems.find((item) => item._id === data._id);
-      const newQuantity = existingItem ? existingItem.quantity + 1 : 1;
-      
-      if (cartId) {
-        // Gọi API cập nhật số lượng nếu đã có cartId
-        dispatch(addToCartAsync({
-          userId: user.id,
-          productId: data._id,
-          quantity: newQuantity
-        }))
-        .unwrap()
-        .then(() => {
-          // Cập nhật UI sau khi API thành công
-          const updatedCartItems = cartItems.map((item) =>
-            item._id === data._id
-              ? {
-                  ...item,
-                  quantity: item.quantity + 1
-                }
-              : item
-          );
-          dispatch(updateItemQuantity(updatedCartItems));
-          showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
-        })
-        .catch((error) => {
-          showSuccessToast(error.message || "Có lỗi xảy ra khi cập nhật giỏ hàng", {
-            icon: false,
-            type: "error"
-          });
-        });
-      }
-    }
+    });
   };
 
   const isInWishlist = (data: Product) => {
@@ -214,7 +193,7 @@ const ItemCard = ({ data }: ItemCardProps) => {
               overflow: 'hidden',
               backgroundColor: '#f8f8f8'
             }}>
-              <Link onClick={handleSubmit} href="/" className="image">
+              <Link onClick={handleSubmit} href={getProductDetailUrl()} className="image">
                 <span className="label veg">
                   <span className="dot"></span>
                 </span>
@@ -293,8 +272,11 @@ const ItemCard = ({ data }: ItemCardProps) => {
             </div>
           </div>
           <div className="gi-pro-content">
+            <div className="gi-pro-rating">
+              <StarRating rating={data.rating || 0} />
+            </div>
             <h5 className="gi-pro-title">
-              <Link href="/product-left-sidebar">{data.name}</Link>
+              <Link href={getProductDetailUrl()}>{data.name}</Link>
             </h5>
             <div className="description-container" style={{
               position: 'relative',

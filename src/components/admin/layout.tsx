@@ -6,9 +6,12 @@ import Image from "next/image";
 import { FaHome, FaChartLine, FaUsers, FaUserShield, FaCog, FaBell, FaList, FaBox, FaSignOutAlt, FaSignInAlt, FaUser } from "react-icons/fa";
 import CategoryDropdown from "./CategoryDropdown";
 import "./admin.css";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
 import { useRouter } from "next/navigation";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { logout } from "@/store/reducers/registrationSlice";
 
 export default function AdminLayout({
   children,
@@ -18,22 +21,72 @@ export default function AdminLayout({
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const router = useRouter();
+  const dispatch = useDispatch();
   
   // Lấy thông tin đăng nhập từ Redux store
   const isAuthenticated = useSelector((state: RootState) => state.registration.isAuthenticated);
   const user = useSelector((state: RootState) => state.registration.user);
 
+  // Kiểm tra nếu cần đăng xuất (dựa trên localStorage)
+  useEffect(() => {
+    const shouldLogout = localStorage.getItem('triggerLogout');
+    if (shouldLogout === 'true') {
+      localStorage.removeItem('triggerLogout');
+      
+      // Đã đăng xuất trên server-side, chuyển hướng về trang login
+      const loginPath = '/login';
+      
+      // Sử dụng window.location.replace thay vì router.push
+      // replace() hữu ích hơn vì nó không thêm vào history
+      window.location.replace(loginPath);
+    }
+  }, []);
+
+  // Xử lý đăng xuất mà không gây lỗi hooks
   const handleLogout = () => {
-    // Xóa token và thông tin người dùng từ localStorage
-    localStorage.removeItem('login_token');
-    localStorage.removeItem('login_user');
+    // Đóng dropdown menu profile trước
+    setIsProfileOpen(false);
     
-    // Chuyển hướng về trang đăng nhập
-    window.location.href = '/login';
+    try {
+      // Xóa thông tin đăng nhập
+      localStorage.removeItem('login_token');
+      localStorage.removeItem('login_user');
+
+      // Đặt trạng thái Redux
+      dispatch(logout());
+      
+      // Đặt flag để useEffect biết cần chuyển hướng ở lần render tiếp theo
+      localStorage.setItem('triggerLogout', 'true');
+      
+      // Hiển thị thông báo
+      toast.success("Đăng xuất thành công", {
+        autoClose: 1000,
+        onClose: () => {
+          // Làm mới trang để áp dụng thay đổi và chuyển đến trang login
+          window.location.reload();
+        }
+      });
+    } catch (error) {
+      console.error("Lỗi khi đăng xuất:", error);
+      toast.error("Có lỗi xảy ra khi đăng xuất");
+    }
   };
 
   return (
     <div className="modern-wrapper">
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+
       <nav className="top-nav">
         <div className="nav-left">
           <Link href="/" className="nav-brand">
@@ -64,7 +117,7 @@ export default function AdminLayout({
               <FaUsers />
               <span>Người Dùng</span>
             </Link>
-            <Link href="/user" className="nav-link">
+            <Link href="/orders-admin" className="nav-link">
               <FaUsers />
               <span>Đơn Hàng</span>
             </Link>

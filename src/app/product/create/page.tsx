@@ -31,7 +31,7 @@ export default function CreateProduct() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/categories/getAll");
+        const response = await axios.get("http://localhost:5001/api/categories/getAll");
         setCategories(response.data.data);
       } catch (error) {
         console.error("Lỗi khi lấy danh sách danh mục:", error);
@@ -54,7 +54,7 @@ export default function CreateProduct() {
         formDataToSend.append("image", formData.image);
       }
 
-      await axios.post("http://localhost:5000/api/products/create", formDataToSend, {
+      await axios.post("http://localhost:5001/api/products/create", formDataToSend, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

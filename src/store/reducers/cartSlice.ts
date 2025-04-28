@@ -1,11 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { Product } from "@/services/productService";
-import { cartService, CartRequest } from "@/services/cartService";
+import { cartService, CartRequest, CartItem, CreateOrderRequest } from "@/services/cartService";
 import { showSuccessToast } from "@/components/toast-popup/Toastify";
-
-interface CartItem extends Product {
-  quantity: number;
-}
 
 interface CartState {
   items: CartItem[];
@@ -20,6 +16,19 @@ const initialState: CartState = {
   error: null,
   cartId: null
 };
+
+// Thunk action mới để lấy giỏ hàng từ API mới
+export const fetchCartFromAPI = createAsyncThunk(
+  'cart/fetchCartFromAPI',
+  async (userId: string, { rejectWithValue }) => {
+    try {
+      const response = await cartService.getCartFromAPI(userId);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 // Thunk action để thêm sản phẩm vào giỏ hàng qua API
 export const addToCartAsync = createAsyncThunk(
@@ -50,10 +59,11 @@ export const fetchUserCartAsync = createAsyncThunk(
 // Thunk action để xóa sản phẩm khỏi giỏ hàng
 export const removeCartItemAsync = createAsyncThunk(
   'cart/removeCartItemAsync',
-  async ({ cartId, productId }: { cartId: string, productId: string }, { rejectWithValue }) => {
+  async (cartItemId: string, { rejectWithValue }) => {
     try {
-      const response = await cartService.removeCartItem(cartId, productId);
-      return { response, productId };
+      const response = await cartService.removeCartItem(cartItemId);
+      showSuccessToast("Đã xóa sản phẩm khỏi giỏ hàng");
+      return { response, cartItemId };
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -66,6 +76,20 @@ export const updateCartItemAsync = createAsyncThunk(
   async ({ cartId, productId, quantity }: { cartId: string, productId: string, quantity: number }, { rejectWithValue }) => {
     try {
       const response = await cartService.updateCartItem(cartId, productId, quantity);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Thunk action để tạo đơn hàng mới
+export const createOrderAsync = createAsyncThunk(
+  'cart/createOrderAsync',
+  async (orderData: CreateOrderRequest, { rejectWithValue }) => {
+    try {
+      const response = await cartService.createOrder(orderData);
+      showSuccessToast("Đặt hàng thành công!");
       return response;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -100,8 +124,33 @@ const cartSlice = createSlice({
       state.items = [];
       state.cartId = null;
     },
+    setCartDetails: (state, action: PayloadAction<CartItem[]>) => {
+      state.items = action.payload;
+    }
   },
   extraReducers: (builder) => {
+    // Thêm xử lý cho fetchCartFromAPI
+    builder.addCase(fetchCartFromAPI.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(fetchCartFromAPI.fulfilled, (state, action) => {
+      state.loading = false;
+      if (action.payload && action.payload.success) {
+        // API trả về dữ liệu trong action.payload.data
+        state.items = action.payload.data || [];
+        
+        // Cập nhật cartId (sử dụng userId cho phù hợp)
+        if (action.payload.data && action.payload.data.length > 0) {
+          state.cartId = action.payload.data[0].userId;
+        }
+      }
+    });
+    builder.addCase(fetchCartFromAPI.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
     // Xử lý addToCartAsync
     builder.addCase(addToCartAsync.pending, (state) => {
       state.loading = true;
@@ -142,8 +191,10 @@ const cartSlice = createSlice({
     });
     builder.addCase(removeCartItemAsync.fulfilled, (state, action) => {
       state.loading = false;
-      // Xóa sản phẩm khỏi state.items
-      state.items = state.items.filter(item => item._id !== action.payload.productId);
+      // Xóa sản phẩm khỏi state.items bằng cartItemId
+      if (action.payload && action.payload.cartItemId) {
+        state.items = state.items.filter(item => item._id !== action.payload.cartItemId);
+      }
     });
     builder.addCase(removeCartItemAsync.rejected, (state, action) => {
       state.loading = false;
@@ -163,6 +214,22 @@ const cartSlice = createSlice({
       state.loading = false;
       state.error = action.payload as string;
     });
+
+    // Xử lý createOrderAsync
+    builder.addCase(createOrderAsync.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(createOrderAsync.fulfilled, (state, action) => {
+      state.loading = false;
+      // Xóa giỏ hàng sau khi đặt hàng thành công
+      state.items = [];
+      state.cartId = null;
+    });
+    builder.addCase(createOrderAsync.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
   }
 });
 
@@ -172,6 +239,7 @@ export const {
   removeItem,
   updateItemQuantity,
   clearCart,
+  setCartDetails
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

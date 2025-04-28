@@ -29,7 +29,7 @@ export default function EditUser({ params }: EditUserProps) {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/users/get/${id}`);
+        const response = await axios.get(`http://localhost:5001/api/users/get/${id}`);
         const userData = response.data.data;
         setFormData({
           fullName: userData.fullName,
@@ -56,7 +56,7 @@ export default function EditUser({ params }: EditUserProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post(`http://localhost:5000/api/users/update/${id}`, formData);
+      await axios.post(`http://localhost:5001/api/users/update/${id}`, formData);
       alert("Cập nhật thông tin thành công!");
       router.push("/user");
     } catch (error) {

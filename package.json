@@ -48,6 +48,7 @@
     "redux-persist": "^6.0.0",
     "sass": "^1.84.0",
     "slick-carousel": "^1.8.1",
+    "sweetalert2": "^11.17.2",
     "swiper": "^11.2.2",
     "swiper-react": "^1.0.0",
     "swr": "^2.3.2",
