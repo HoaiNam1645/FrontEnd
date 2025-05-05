@@ -27,6 +27,7 @@ interface ProductPageProps {
   hasPaginate?: boolean;
   onError?: () => void;
   productData?: Product | null;
+  reviews?: any[];
 }
 
 const ProductPage = ({
@@ -37,6 +38,7 @@ const ProductPage = ({
   hasPaginate = false,
   onError = () => {},
   productData = null,
+  reviews = [],
 }: ProductPageProps) => {
   const dispatch = useDispatch();
   const {
@@ -203,7 +205,7 @@ const ProductPage = ({
         </div> */}
 
         {/* <!-- Tab sản phẩm bắt đầu --> */}
-        <ProductTeb />
+        <ProductTeb productId={productData?._id || ''} reviews={reviews} />
         {/* <!-- Khu vực mô tả chi tiết sản phẩm kết thúc --> */}
       </Col>
     </>

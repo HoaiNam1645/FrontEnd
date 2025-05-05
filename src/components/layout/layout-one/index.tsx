@@ -2,13 +2,14 @@
 import Footer from "./Footer";
 import Header from "./Header";
 import Toastify from "../../toast-popup/Toastify";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { setUserData } from "@/store/reducers/registrationSlice";
 import ChatBox from "@/components/chat/ChatBox";
 
 function LayoutOne({ children }) {
   const dispatch = useDispatch();
+  const [cssLoaded, setCssLoaded] = useState(false);
 
   // Load user data from localStorage when component mounts
   useEffect(() => {
@@ -26,14 +27,21 @@ function LayoutOne({ children }) {
   }, [dispatch]);
 
   useEffect(() => {
+    // Load CSS
     const cssFilePath = "/assets/css/demo-1.css";
     const link = document.createElement("link");
     link.href = cssFilePath;
     link.rel = "stylesheet";
     document.head.appendChild(link);
+    setCssLoaded(true);
 
     return () => {
-      document.head.removeChild(link);
+      // Cleanup CSS
+      try {
+        document.head.removeChild(link);
+      } catch (error) {
+        console.error("Error removing CSS:", error);
+      }
     };
   }, []);
 

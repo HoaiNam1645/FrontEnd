@@ -263,10 +263,17 @@ const SingleProductContent = ({
                   </span>
                 </div>
               </div>
-              <div className="gi-single-desc" style={{ fontSize: "16px", lineHeight: "1.6", marginBottom: "25px" }}>
-                {productData 
-                  ? productData.description 
-                  : "Đây là phần mô tả sản phẩm. Mô tả chi tiết các đặc điểm, công dụng và ưu điểm của sản phẩm để người dùng có thể hiểu rõ hơn."}
+              <div className="gi-single-desc" style={{ marginBottom: "25px" }}>
+                <p>
+                  {productData ? productData.description : "Snack khoai tây nhập khẩu trực tiếp từ hãng Pringles mang tới hương vị tuyệt hảo, kết hợp giữa hương kem chua và hành tây. Mùi hương thơm mát, quyến rũ, vị cay nhẹ đặc trưng."}
+                </p>
+                <p>
+                  <strong>Danh mục:</strong> {productData && productData.categoryId ? 
+                    (typeof productData.categoryId === 'string' ? 
+                      productData.categoryId : 
+                      (productData.categoryId as any).name || "N/A") 
+                    : "N/A"}
+                </p>
               </div>
 
               <div className="gi-single-list" style={{ marginBottom: "25px" }}>
@@ -274,32 +281,7 @@ const SingleProductContent = ({
                   <li>
                     <strong>Số lượng trong kho:</strong> {productData ? productData.stock : "N/A"}
                   </li>
-                  <li>
-                    <strong>Danh mục:</strong> {productData ? productData.categoryId : "N/A"}
-                  </li>
                 </ul>
-              </div>
-
-              <div className="gi-pro-variation" style={{ marginBottom: "25px" }}>
-                <div className="gi-pro-variation-inner gi-pro-variation-size">
-                  <span style={{ fontSize: "16px", fontWeight: "600" }}>Trọng lượng</span>
-                  <div className="gi-pro-variation-content">
-                    <ul style={{ marginTop: "10px" }}>
-                      <li className="active">
-                        <span style={{ fontSize: "15px" }}>250g</span>
-                      </li>
-                      <li>
-                        <span style={{ fontSize: "15px" }}>500g</span>
-                      </li>
-                      <li>
-                        <span style={{ fontSize: "15px" }}>1kg</span>
-                      </li>
-                      <li>
-                        <span style={{ fontSize: "15px" }}>2kg</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
               </div>
               <div className="gi-single-qty">
                 <div className="qty-plus-minus">

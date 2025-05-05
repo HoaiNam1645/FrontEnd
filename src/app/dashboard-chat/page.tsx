@@ -9,6 +9,8 @@ import SmartToyIcon from '@mui/icons-material/SmartToy';
 import PersonIcon from '@mui/icons-material/Person';
 import { useRouter } from 'next/navigation';
 import { getApiUrl } from '@/config/api';
+import { useDispatch } from 'react-redux';
+import { logout } from '@/store/reducers/registrationSlice';
 
 const ChatContainer = styled(Paper)(({ theme }) => ({
   height: 'calc(100vh - 200px)',
@@ -106,6 +108,7 @@ export default function DashboardChat() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const dispatch = useDispatch();
 
   const getUserFromLocalStorage = () => {
     try {
@@ -198,6 +201,13 @@ export default function DashboardChat() {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('login_token');
+    localStorage.removeItem('login_user');
+    dispatch(logout());
+    window.location.href = '/login';
   };
 
   if (error) {

@@ -61,7 +61,7 @@ function HeaderTwo({ cartItems, wishlistItems }) {
     localStorage.removeItem("login_user");
     localStorage.removeItem("login_token");
     dispatch(logout());
-    router.push("/login/");
+    window.location.href = "/login";
   };
 
   // Tính tổng giá trị giỏ hàng
@@ -166,7 +166,10 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                             </Link>
                           </li> */}
                           <li>
-                            <Link className="dropdown-item" href="/login">
+                            <Link className="dropdown-item" href="/login" onClick={(e) => {
+                              e.preventDefault();
+                              window.location.href = "/login";
+                            }}>
                               Đăng nhập
                             </Link>
                           </li>

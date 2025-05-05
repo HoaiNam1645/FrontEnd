@@ -4,11 +4,8 @@ import Breadcrumb from '@/components/breadcrumb/Breadcrumb'
 const page = () => {
     return (
         <>
-
-
-            <Breadcrumb title={"Profile Edit"} />
+            <Breadcrumb title={"Cập nhật thông tin"} />
             <RagisterEditPage />
-
         </>
     )
 }

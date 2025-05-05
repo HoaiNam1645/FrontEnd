@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react'
 import { productService } from '@/services/productService'
 import Spinner from '@/components/button/Spinner'
 import { use } from 'react'
+import { productsApi } from '@/utils/api'
 
 const ProductDetailPage = ({ params }) => {
   // Unwrap params with React.use
@@ -15,6 +16,7 @@ const ProductDetailPage = ({ params }) => {
   const productId = unwrappedParams.id;
   
   const [product, setProduct] = useState(null)
+  const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -22,10 +24,20 @@ const ProductDetailPage = ({ params }) => {
     const fetchProductData = async () => {
       try {
         setLoading(true)
-        const data = await productService.getProductById(productId)
-        setProduct(data)
+        // Sử dụng API mới có thông tin reviews
+        const response = await productsApi.getProductById(productId);
+        if (response.data && response.data.success) {
+          setProduct(response.data.data)
+          // Lưu reviews nếu có
+          if (response.data.reviews) {
+            setReviews(response.data.reviews)
+          }
+        } else {
+          throw new Error('Không thể tải thông tin sản phẩm')
+        }
         setLoading(false)
       } catch (err) {
+        console.error('Error fetching product:', err)
         setError('Không thể tải thông tin sản phẩm')
         setLoading(false)
       }
@@ -61,6 +73,7 @@ const ProductDetailPage = ({ params }) => {
           <Row>
             <ProductPage
               productData={product}
+              reviews={reviews}
             />
           </Row>
         </div>

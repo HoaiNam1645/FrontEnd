@@ -24,7 +24,7 @@ const UserRoute: React.FC<UserRouteProps> = ({ children }) => {
   useEffect(() => {
     // Kiểm tra xem người dùng đã đăng nhập chưa
     if (!isAuthenticated) {
-      router.push('/login');
+      window.location.href = '/login';
       return;
     }
 

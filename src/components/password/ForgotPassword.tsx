@@ -37,7 +37,11 @@ const ForgotPassword = () => {
   }, [isAuthenticated, router]);
 
   const onSubmit = (values: any) => {
-    router.push("/login");
+    // Hiển thị thông báo và chuyển hướng sau 2 giây
+    showSuccessToast('Gửi email lấy lại mật khẩu thành công!');
+    setTimeout(() => {
+      window.location.href = "/login";
+    }, 2000);
   };
 
   return (

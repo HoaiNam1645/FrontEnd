@@ -1,66 +1,80 @@
 "use client";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import {
-  getRegistrationData,
-  setRegistrationData,
-} from "../login/RegisterPage";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "@/store";
-import { toggleSwitch } from "@/store/reducers/cartSlice";
-import VandorEdit from "./VandorEdit";
 import { Form } from "react-bootstrap";
+import axios from "axios";
+import { showErrorToast, showSuccessToast } from "../toast-popup/Toastify";
 
-export interface RegistrationData {
-  firstName: string;
-  lastName: string;
+export interface UserData {
+  fullName: string;
   email: string;
-  phoneNumber: string;
+  password: string;
+  phone: string;
   address: string;
-  city: string;
-  postCode: string;
-  country: string;
-  state: string;
-  profilePhoto?: string;
-  description: string;
+  role?: string;
+  avatarUrl?: string | null;
+  description?: string;
 }
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 
 const ProfileEdit = () => {
   const router = useRouter();
-  const dispatch = useDispatch();
-  const isSwitchOnFromRedux = useSelector((state: RootState) => state.cart.isSwitchOn);
-  const [isSwitchOn, setIsSwitchOn] = useState<boolean>(false);
   const [validated, setValidated] = useState(false);
-  const [formData, setFormData] = useState<RegistrationData>({
-    firstName: "",
-    lastName: "",
+  const [formData, setFormData] = useState<UserData>({
+    fullName: "",
     email: "",
-    phoneNumber: "",
+    password: "",
+    phone: "",
     address: "",
-    city: "",
-    postCode: "",
-    country: "",
-    state: "",
-    profilePhoto: "",
+    avatarUrl: null,
     description: "",
   });
+  const [loading, setLoading] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const login = useSelector((state: RootState) => state.registration.isAuthenticated);
+  const loginUserData = localStorage.getItem("login_user");
+  const idUser = loginUserData ? JSON.parse(loginUserData).id : null;
 
   useEffect(() => {
-    const data = getRegistrationData();
-    if (data.length > 0) {
-      const user = data[data.length - 1];
-      setFormData(user);
+    const fetchUserData = async () => {
+      try {
+        if (!idUser) {
+          throw new Error("Không tìm thấy ID người dùng");
+        }
+        const response = await axios.get(`${API_BASE_URL}/api/users/get/${idUser}`);
+        const userData = response.data.data;
+        
+        setFormData({
+          fullName: userData.fullName || "",
+          email: userData.email || "",
+          password: "", // Không hiển thị mật khẩu
+          phone: userData.phone || "",
+          address: userData.address || "",
+          role: userData.role || "user",
+          avatarUrl: userData.avatarUrl || null,
+          description: userData.description || "",
+        });
+
+        // Nếu có avatar, hiển thị ảnh preview
+        if (userData.avatarUrl) {
+          setImagePreview(userData.avatarUrl);
+        }
+      } catch (error: any) {
+        showErrorToast(error.response?.data?.message || "Không thể tải thông tin người dùng");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (login) {
+      fetchUserData();
     }
-  }, []);
-
-  useEffect(() => {
-    setIsSwitchOn(isSwitchOnFromRedux);
-  }, [isSwitchOnFromRedux]);
-
-
-  const handleSwitchToggle = () => {
-    dispatch(toggleSwitch());
-  };
+  }, [login, idUser]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -77,18 +91,16 @@ const ProfileEdit = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setAvatarFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData((prevData) => ({
-          ...prevData,
-          profilePhoto: reader.result as string,
-        }));
+        setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const form = e.currentTarget;
@@ -98,18 +110,92 @@ const ProfileEdit = () => {
       return;
     }
 
+    try {
+      // Chuẩn bị dữ liệu để gửi lên server
+      const formDataToSend = new FormData();
+      formDataToSend.append("fullName", formData.fullName);
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("phone", formData.phone);
+      formDataToSend.append("address", formData.address);
+      formDataToSend.append("role", formData.role || "user");
+      
+      // Chỉ gửi mật khẩu nếu có nhập
+      if (formData.password) {
+        formDataToSend.append("password", formData.password);
+      }
+      
+      // Thêm mô tả nếu có
+      if (formData.description) {
+        formDataToSend.append("description", formData.description);
+      }
+      
+      // Thêm ảnh đại diện nếu có cập nhật mới
+      if (avatarFile) {
+        // Gửi file thực tế qua FormData để multer xử lý
+        formDataToSend.append("avatarUrl", avatarFile); // Tên field phải tương ứng với multer config
+      } else if (formData.avatarUrl) {
+        // Nếu không có file mới nhưng có URL ảnh cũ, thông báo cho server giữ nguyên
+        formDataToSend.append("keepExistingAvatar", "true");
+      }
 
-    // Update the registration data in local storage
-    const updatedData = [...getRegistrationData()];
-    updatedData[updatedData.length - 1] = formData;
-    setRegistrationData(updatedData);
+      console.log("Dữ liệu gửi lên:", {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        hasAvatar: !!avatarFile
+      });
 
-    // Redirect to the user profile page after editing
-    router.push("/user-profile");
+      // Gửi thông tin cập nhật lên API
+      const response = await axios.post(
+        `${API_BASE_URL}/api/users/update/${idUser}`,
+        formDataToSend,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data", // Rất quan trọng khi upload file
+          },
+        }
+      );
+
+      if (response.data.success) {
+        showSuccessToast("Cập nhật thông tin thành công");
+        
+        // Cập nhật thông tin người dùng trong localStorage nếu cần
+        try {
+          const updatedUser = {
+            id: idUser,
+            fullName: formData.fullName,
+            email: formData.email,
+            role: formData.role || "user"
+          };
+          localStorage.setItem("login_user", JSON.stringify(updatedUser));
+        } catch (err) {
+          console.error("Lỗi khi cập nhật localStorage:", err);
+        }
+        
+        router.push("/user-profile");
+      } else {
+        showErrorToast(response.data.message || "Cập nhật thông tin thất bại");
+      }
+    } catch (error: any) {
+      showErrorToast(
+        error.response?.data?.message || "Đã xảy ra lỗi khi cập nhật thông tin"
+      );
+    }
   };
 
-  if (isSwitchOn) {
-    return <VandorEdit />;
+  if (!login) {
+    return (
+      <div className="container padding-tb-40">
+        <p>
+          Vui lòng <a href="/login">đăng nhập</a> hoặc <a href="/register">đăng ký</a>{" "}
+          để xem trang này.
+        </p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return <div className="container padding-tb-40">Đang tải...</div>;
   }
 
   return (
@@ -118,78 +204,37 @@ const ProfileEdit = () => {
         <div className="container">
           <div className="section-title-2">
             <h2 className="gi-title">
-              Edit Profile<span></span>
+              Cập nhật thông tin<span></span>
             </h2>
-            <p>Best place to buy and sell digital products.</p>
+            <p>Cập nhật thông tin tài khoản của bạn</p>
           </div>
           <div className="row">
             <div className="gi-register-wrapper">
               <div className="gi-register-container">
                 <div className="gi-register-form">
-                  <span
-                    style={{
-                      display: "flex",
-                      justifyContent: "end",
-                      marginTop: "10px",
-                    }}
-                  >
-                    {isSwitchOn ? "Switch is Vendor" : "Switch"}
-                  </span>
-                  <span
-                    style={{
-                      display: "flex",
-                      justifyContent: "end",
-                      marginTop: "10px",
-                    }}
-                    className="switch"
-                  >
-                    <input
-                      onChange={handleSwitchToggle}
-                      checked={isSwitchOn}
-                      id="switch-rounded"
-                      type="checkbox"
-                    />
-                    <label htmlFor="switch-rounded"></label>
-                  </span>
                   <Form noValidate validated={validated}
                     className="gi-blog-form"
                     action="#"
                     method="post"
                     onSubmit={handleSubmit}
                   >
-                    <span className="gi-register-wrap gi-register-half">
-                      <label>First Name*</label>
+                    <span className="gi-register-wrap">
+                      <label>Họ và tên*</label>
                       <Form.Group>
                         <Form.Control
                           type="text"
-                          name="firstName"
-                          placeholder="Enter your first name"
-                          value={formData.firstName}
+                          name="fullName"
+                          placeholder="Nhập họ và tên của bạn"
+                          value={formData.fullName}
                           onChange={handleInputChange}
                           required
                         />
                          <Form.Control.Feedback type="invalid">
-                          Please Enter First Name.
+                          Vui lòng nhập họ và tên.
                         </Form.Control.Feedback>
                       </Form.Group>
                     </span>
-                    <span className="gi-register-wrap gi-register-half">
-                      <label>Last Name*</label>
-                      <Form.Group>
-                        <Form.Control
-                          type="text"
-                          name="lastName"
-                          placeholder="Enter your last name"
-                          required
-                          value={formData.lastName}
-                          onChange={handleInputChange}
-                        />
-                         <Form.Control.Feedback type="invalid">
-                          Please Enter Last Name.
-                        </Form.Control.Feedback>
-                      </Form.Group>
-                     
-                    </span>
+                    
                     <span
                       style={{ marginTop: "10px" }}
                       className="gi-register-wrap gi-register-half"
@@ -199,74 +244,101 @@ const ProfileEdit = () => {
                         <Form.Control
                           type="email"
                           name="email"
-                          placeholder="Enter your email add..."
+                          placeholder="Nhập địa chỉ email"
                           required
                           value={formData.email}
                           onChange={handleInputChange}
                         />
                         <Form.Control.Feedback type="invalid">
-                          Please Enter correct username.
+                          Vui lòng nhập email hợp lệ.
                         </Form.Control.Feedback>
                       </Form.Group>
                     </span>
+                    
                     <span
                       style={{ marginTop: "10px" }}
                       className="gi-register-wrap gi-register-half"
                     >
-                      <label>Phone Number*</label>
+                      <label>Số điện thoại*</label>
                       <Form.Group>
                         <Form.Control
                           type="text"
-                          name="phoneNumber"
-                          placeholder="Enter your phone number"
+                          name="phone"
+                          placeholder="Nhập số điện thoại"
                           pattern="^\d{10,12}$"
                           required
-                          value={formData.phoneNumber}
+                          value={formData.phone}
                           onChange={handleInputChange}
                         />
                         <Form.Control.Feedback type="invalid">
-                          Please Enter 10-12 digit number.
+                          Vui lòng nhập số điện thoại từ 10-12 số.
                         </Form.Control.Feedback>
                       </Form.Group>
                     </span>
+                    
                     <span
                       style={{ marginTop: "10px" }}
                       className="gi-register-wrap"
                     >
-                      <label>Address</label>
+                      <label>Địa chỉ*</label>
                       <Form.Group>
                         <Form.Control
                           type="text"
                           name="address"
-                          placeholder="Address Line 1"
+                          placeholder="Nhập địa chỉ của bạn"
                           value={formData.address}
                           onChange={handleInputChange}
                           required
                         />
                          <Form.Control.Feedback type="invalid">
-                          Please Enter Address.
+                          Vui lòng nhập địa chỉ.
                         </Form.Control.Feedback>
                       </Form.Group>
                     </span>
+                    
+                    <span
+                      style={{ marginTop: "10px" }}
+                      className="gi-register-wrap"
+                    >
+                      <label>Mật khẩu {formData.password ? "" : "(để trống nếu không muốn thay đổi)"}</label>
+                      <Form.Group className="position-relative">
+                        <Form.Control
+                          type={showPassword ? "text" : "password"}
+                          name="password"
+                          placeholder="Nhập mật khẩu mới"
+                          value={formData.password}
+                          onChange={handleInputChange}
+                          minLength={8}
+                        />
+                        <button 
+                          type="button" 
+                          className="position-absolute end-0 top-50 translate-middle-y bg-transparent border-0 pe-2"
+                          onClick={() => setShowPassword(!showPassword)}
+                          style={{ right: '10px', zIndex: 10 }}
+                        >
+                          <i className={`fi ${showPassword ? 'fi-rr-eye' : 'fi-rr-eye-crossed'}`}></i>
+                        </button>
+                        <Form.Control.Feedback type="invalid">
+                          Mật khẩu phải có ít nhất 8 ký tự.
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </span>
+                    
                     <span
                       style={{ marginTop: "10px" }}
                       className="gi-register-wrap"
                     >
                       <div className="gi-leave-form">
                         <Form.Group>
-                          <label>About Me</label>
+                          <label>Mô tả bản thân</label>
                           <Form.Control
                             as="textarea"
                             rows={3}
                             name="description"
-                            placeholder="Message"
-                            required
-                            value={formData.description}
+                            placeholder="Nhập mô tả về bản thân"
+                            value={formData.description || ""}
                             onChange={handleInputChange}
                           />
-                          <Form.Control.Feedback type="invalid">
-                          This field is required
-                          </Form.Control.Feedback>
                         </Form.Group>
                       </div>
                     </span>
@@ -275,28 +347,33 @@ const ProfileEdit = () => {
                       style={{ paddingTop: "10px", marginTop: "10px" }}
                       className="gi-register-wrap"
                     >
-                      <label>Profile Photo</label>
+                      <label>Ảnh đại diện</label>
                       <input
                         style={{ paddingTop: "10px" }}
                         type="file"
-                        id="profilePhoto"
-                        name="profilePhoto"
+                        id="avatarUrl"
+                        name="avatarUrl"
                         onChange={handleFileChange}
+                        accept="image/*"
+                        className="form-control"
                       />
-                      {formData.profilePhoto && (
-                        <img
-                          src={formData.profilePhoto}
-                          alt="Profile"
-                          width="100"
-                        />
+                      {imagePreview && (
+                        <div style={{ marginTop: "10px" }}>
+                          <img
+                            src={imagePreview}
+                            alt="Ảnh đại diện"
+                            style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '50%' }}
+                          />
+                        </div>
                       )}
                     </span>
+                    
                     <span
                       style={{ justifyContent: "end", marginTop: "10px" }}
                       className="gi-register-wrap gi-register-btn"
                     >
                       <button className="gi-btn-1" type="submit">
-                        Save
+                        Lưu thông tin
                       </button>
                     </span>
                   </Form>

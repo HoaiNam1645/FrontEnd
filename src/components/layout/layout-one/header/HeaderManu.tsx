@@ -223,46 +223,22 @@ function HeaderManu() {
                             ))}
                           </ul>
                         </li>
-                        <li className="dropdown drop-list">
+                        {/* <li className="dropdown drop-list">
                           <Link href="" className="dropdown-arrow">
                             Sản phẩm<i className="fi-rr-angle-small-right"></i>
                           </Link>
-                          <ul className="sub-menu">
-                            {productpage.map((data, index) => (
-                              <li
-                                key={index}
-                                className="dropdown position-static"
-                              >
-                                <Link href="">
-                                  {data.name}
-                                  <i className="fi-rr-angle-small-right"></i>
-                                </Link>
-                                <ul className="sub-menu sub-menu-child">
-                                  {data.subname.map((subPage, subIndex) => (
-                                    <React.Fragment key={subIndex}>
-                                      <li>
-                                        <Link href={subPage.href}>
-                                          {subPage.name}
-                                        </Link>
-                                      </li>
-                                    </React.Fragment>
-                                  ))}
-                                </ul>
-                              </li>
-                            ))}
-                          </ul>
-                        </li>
+                        </li> */}
                         <li className="dropdown drop-list">
-                          <Link href="" className="dropdown-arrow">
-                            Tin Tức<i className="fi-rr-angle-small-right"></i>
+                          <Link href="/blog-left-sidebar" className="dropdown-arrow">
+                            Tin Tức
                           </Link>
-                          <ul className="sub-menu">
+                          {/* <ul className="sub-menu">
                             {blog.map((data, index) => (
                               <li key={index}>
                                 <Link href={data.href}>{data.name}</Link>
                               </li>
                             ))}
-                          </ul>
+                          </ul> */}
                         </li>
                       </ul>
                     </div>

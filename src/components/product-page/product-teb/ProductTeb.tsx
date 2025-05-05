@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Tab, TabList, Tabs } from "react-tabs";
+import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import { Fade } from "react-awesome-reveal";
 import RatingComponent from "@/components/stars/RatingCompoents";
 import { useSelector } from "react-redux";
@@ -8,6 +8,8 @@ import { RootState } from "@/store";
 import { Form } from "react-bootstrap";
 import { Col, Row } from "react-bootstrap";
 import "react-tabs/style/react-tabs.css";
+import { reviewsApi } from "@/utils/api";
+import { log } from "console";
 
 export interface RegistrationData {
   firstName: string;
@@ -21,128 +23,159 @@ export interface RegistrationData {
   state: string;
   profilePhoto?: string;
   description: string;
+  _id?: string;
 }
 
-const getRegistrationData = () => {
+export interface Review {
+  _id: string;
+  productId: string;
+  userId?: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  updatedAt: string;
+  fullName?: string;
+  avataUrl?: string | null;
+}
+
+export interface UserData {
+  id: string;
+  fullName: string;
+  email: string;
+  role: string;
+  profilePhoto?: string;
+}
+
+interface ProductTebProps {
+  productId: string;
+  reviews?: Review[];
+}
+
+const getUserData = () => {
   if (typeof window !== "undefined") {
-    const data = localStorage.getItem("registrationData");
+    const data = localStorage.getItem("login_user");
     return data ? JSON.parse(data) : null;
   }
   return null;
 };
 
-const ProductTeb = () => {
+const ProductTeb = ({ productId, reviews: apiReviews = [] }: ProductTebProps) => {
   const login = useSelector(
     (state: RootState) => state.registration.isAuthenticated
   );
-  const [userData, setUserData] = useState<any | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [validated, setValidated] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [comment, setComment] = useState("");
   const [rating, setRating] = useState(0);
-  const [reviews, setReviews] = useState([
-    {
-      name: "Nguyễn Văn A",
-      rating: 3,
-      comment:
-        "Sản phẩm rất tốt, dùng rất bền, sẽ tiếp tục mua lần sau...",
-      avatar: "/assets/img/avatar/placeholder.jpg",
-    },
-  ]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
-  const detail = {
-    text: "Đây là phần mô tả chi tiết sản phẩm, giúp khách hàng hiểu rõ hơn về sản phẩm mà bạn đang cung cấp. Hãy cập nhật nội dung này với thông tin chi tiết về sản phẩm của bạn, bao gồm các tính năng, lợi ích, và bất kỳ thông tin quan trọng nào mà khách hàng nên biết.",
-  };
-  const information = [
-    {
-      info: "Nhãn hiệu",
-      detail: "Greenivi",
-    },
-    {
-      info: "Đơn vị",
-      detail: "Cái",
-    },
-    {
-      info: "Xuất xứ",
-      detail: "Việt Nam",
-    },
-    {
-      info: "Kích thước",
-      detail: "320 x 152 x 12cm",
-    },
-    {
-      info: "Màu sắc",
-      detail: "Đen, Đỏ, Xanh dương, Trắng",
-    },
-    {
-      info: "Ngày hết hạn",
-      detail: "Đang cập nhật",
-    },
-    {
-      info: "Xuất xứ thương hiệu",
-      detail: "Nhật Bản",
-    },
-    {
-      info: "Dạng đóng gói",
-      detail: "Hộp",
-    },
-    {
-      info: "Trọng lượng",
-      detail: "1.25kg",
-    },
-    {
-      info: "Thông tin cảnh báo",
-      detail: "Không có",
-    },
-    {
-      info: "Hướng dẫn sử dụng",
-      detail: "Xem hướng dẫn sử dụng trong hộp sản phẩm",
-    },
-  ];
-
-  const specification = {
-    list: "Thông số kỹ thuật của sản phẩm. Đối với các sản phẩm tương tự như laptop, điện thoại, và các thiết bị điện tử khác, phần này sẽ cung cấp thông tin chi tiết về cấu hình và đặc điểm kỹ thuật. Nếu sản phẩm của bạn không thuộc nhóm các sản phẩm này, bạn có thể điều chỉnh để thể hiện các thông số kỹ thuật phù hợp với loại sản phẩm của mình.",
-  };
+  // Sử dụng đánh giá từ API
+  useEffect(() => {
+    if (apiReviews && apiReviews.length > 0) {
+      setReviews(apiReviews);
+    }
+  }, [apiReviews]);
 
   useEffect(() => {
-    if (login) {
-      const data = getRegistrationData();
-      if (data?.length > 0) {
-        setUserData(data[data.length - 1]);
-      }
+    // Lấy thông tin người dùng từ localStorage
+    const loggedInUser = getUserData();
+    if (loggedInUser) {
+      console.log('Thông tin người dùng:', loggedInUser);
+      setUserData(loggedInUser);
     }
-  }, [login]);
+  }, []);
 
   const handleProductClick = (index: number) => {
     setSelectedIndex(index);
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
 
     if (form.checkValidity() === false) {
       e.stopPropagation();
-    } else {
-      if (userData && comment && rating) {
-        setReviews([
-          ...reviews,
-          {
-            name: `${userData.firstName} ${userData.lastName}`,
-            rating,
-            comment,
-            avatar:
-              userData.profilePhoto || "/assets/img/avatar/placeholder.jpg",
-          },
-        ]);
-
-        setComment("");
-        setRating(0);
-      }
+      setValidated(true);
+      return;
     }
 
-    setValidated(true);
+    if (!userData || !userData.id) {
+      console.error("Thông tin người dùng không hợp lệ:", userData);
+      setSubmitError("Thông tin người dùng không hợp lệ");
+      return;
+    }
+
+    if (!rating) {
+      setSubmitError("Vui lòng chọn số sao đánh giá");
+      return;
+    }
+
+    if (!comment.trim()) {
+      setSubmitError("Vui lòng nhập nội dung đánh giá");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setSubmitError("");
+
+      const reviewData = {
+        userId: userData.id,
+        productId: productId,
+        rating: rating,
+        comment: comment
+      };
+
+      console.log("Dữ liệu gửi đánh giá:", reviewData);
+      
+      const response = await reviewsApi.createReview(reviewData);
+      console.log("Kết quả gửi đánh giá:", response.data);
+      
+      if (response.status === 200 || response.status === 201) {
+        // Tạo đánh giá mới để hiển thị ngay
+        const newReview: Review = {
+          _id: response.data?.data?._id || Date.now().toString(),
+          productId: productId,
+          userId: userData.id,
+          rating: rating,
+          comment: comment,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          fullName: userData.fullName,
+          avataUrl: userData.profilePhoto || null
+        };
+
+        // Thêm đánh giá mới vào đầu danh sách
+        setReviews([newReview, ...reviews]);
+
+        // Reset form
+        setComment("");
+        setRating(0);
+        setValidated(false);
+      }
+    } catch (error) {
+      console.error("Lỗi khi gửi đánh giá:", error);
+      setSubmitError("Có lỗi xảy ra khi gửi đánh giá. Vui lòng thử lại sau.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  // Format thời gian
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <>
       <Tabs
@@ -165,17 +198,18 @@ const ProductTeb = () => {
                   aria-selected="true"
                   onClick={() => handleProductClick(0)}
                 >
-                  Đánh giá
+                  Đánh giá ({reviews.length})
                 </button>
               </Tab>
             </ul>
           </TabList>
           <div className="tab-content gi-single-pro-tab-content">
+            <TabPanel>
             <Fade
               duration={1000}
               className="tab-pane fade show active"
             >
-              {!login ? (
+                {!userData ? (
                 <div className="container">
                   <p>
                     Vui lòng <a href="/login">đăng nhập</a> hoặc{" "}
@@ -185,38 +219,50 @@ const ProductTeb = () => {
               ) : (
                 <div className="row">
                   <div className="gi-t-review-wrapper">
-                    {reviews.map((data, index) => (
-                      <div key={index} className="gi-t-review-item">
+                      {reviews.length > 0 ? (
+                        reviews.map((review, index) => (
+                          <div key={review._id} className="gi-t-review-item" style={{ marginBottom: '20px', padding: '15px', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
                         <div className="gi-t-review-avtar">
                           <img
                             src={
-                              data.avatar ||
-                              process.env.NEXT_PUBLIC_URL +
+                                  review.avataUrl ||
                                 "/assets/img/avatar/placeholder.jpg"
                             }
                             alt="user"
+                                style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }}
                           />
                         </div>
-                        <div className="gi-t-review-content">
+                            <div className="gi-t-review-content" style={{ paddingLeft: '15px' }}>
                           <div className="gi-t-review-top">
-                            <div className="gi-t-review-name">{data.name}</div>
-                            <div className="gi-t-review-rating">
+                                <div className="gi-t-review-name" style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                                  {review.fullName || "Người dùng"}
+                                </div>
+                                <div className="gi-t-review-rating" style={{ margin: '8px 0' }}>
                               {[...Array(5)].map((_, i) => (
                                 <i
                                   key={i}
                                   className={`gicon gi-star ${
-                                    i < data.rating ? "fill" : "gi-star-o"
+                                        i < review.rating ? "fill" : "gi-star-o"
                                   }`}
+                                      style={{ color: i < review.rating ? '#FFA534' : '#ddd', marginRight: '2px' }}
                                 ></i>
                               ))}
+                                </div>
+                                <div className="gi-t-review-date" style={{ fontSize: '12px', color: '#888', marginTop: '4px' }}>
+                                  {formatDate(review.createdAt)}
+                                </div>
+                              </div>
+                              <div className="gi-t-review-bottom" style={{ marginTop: '10px' }}>
+                                <p style={{ margin: '0', lineHeight: '1.6' }}>{review.comment}</p>
+                              </div>
                             </div>
                           </div>
-                          <div className="gi-t-review-bottom">
-                            <p>{data.comment}</p>
-                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-4">
+                          <p>Chưa có đánh giá nào cho sản phẩm này.</p>
                         </div>
-                      </div>
-                    ))}
+                      )}
                   </div>
                   <div className="gi-ratting-content">
                     <h3>Thêm đánh giá</h3>
@@ -247,12 +293,16 @@ const ProductTeb = () => {
                               Vui lòng nhập đánh giá của bạn
                             </Form.Control.Feedback>
                           </Form.Group>
+                            {submitError && (
+                              <div className="text-danger mb-3">{submitError}</div>
+                            )}
                           <button
                             style={{ marginTop: "15px" }}
                             className="gi-btn-2"
                             type="submit"
+                              disabled={isSubmitting}
                           >
-                            Gửi đánh giá
+                              {isSubmitting ? "Đang gửi..." : "Gửi đánh giá"}
                           </button>
                         </div>
                       </Form>
@@ -261,6 +311,7 @@ const ProductTeb = () => {
                 </div>
               )}
             </Fade>
+            </TabPanel>
           </div>
         </div>
       </Tabs>

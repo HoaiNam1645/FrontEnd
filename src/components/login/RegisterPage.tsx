@@ -67,7 +67,9 @@ const RegisterPage = () => {
         localStorage.setItem("login_user", JSON.stringify(response.data));
         dispatch(login(response.data));
         showSuccessToast("Đăng ký thành công!");
-        router.push("/login");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 1500);
         if (formikRef.current) {
           formikRef.current.resetForm();
         }

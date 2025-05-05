@@ -11,35 +11,46 @@ import { RootState } from "@/store";
 import axios from "axios";
 
 const LoginPage = () => {
-  // State declarations
+  // Always declare all hooks at the top level
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [validated, setValidated] = useState(false);
+  const [redirected, setRedirected] = useState(false);
   
-  // Redux and Router
   const router = useRouter();
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(
     (state: RootState) => state.registration.isAuthenticated
   );
 
-  // Authentication check effect
+  // Check for authentication
   useEffect(() => {
     if (isAuthenticated) {
-      router.push("/");
+      const userRoleStr = localStorage.getItem('login_user');
+      const userRole = userRoleStr ? JSON.parse(userRoleStr).role : null;
+      
+      if (userRole === 'admin') {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
     }
   }, [isAuthenticated, router]);
 
-  // Redirect check effect
+  // Check for redirect - use a state variable to track if we've already processed the redirect
   useEffect(() => {
+    if (redirected) return;
+  
     const redirectPath = localStorage.getItem('redirectAfterLogin');
     if (redirectPath) {
+      setRedirected(true);
       localStorage.removeItem('redirectAfterLogin');
-      window.location.replace(redirectPath);
+  
+      // Sử dụng router.push để tránh lỗi render hooks
+      router.push(redirectPath);
     }
-  }, []);
-
-  // Login form submit handler
+  }, [redirected, router]);
+  
   const handleLogin = async (e: any) => {
     e.preventDefault();
 
@@ -74,14 +85,12 @@ const LoginPage = () => {
 
         showSuccessToast("Đăng nhập thành công");
         
-        // Set redirect based on role
-        const redirectPath = user.role === 'admin' ? '/admin' : '/';
-        localStorage.setItem('redirectAfterLogin', redirectPath);
-        
-        // Refresh page to trigger redirect
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        // Navigate after login completes
+        if (user.role === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/');
+        }
       }
     } catch (error: any) {
       console.error("Login error:", error.response?.data?.message || "Đăng nhập thất bại");
