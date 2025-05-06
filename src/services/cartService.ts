@@ -153,7 +153,17 @@ export const cartService = {
   getCartFromAPI: async (userId: string): Promise<CartDetailResponse> => {
     try {
       console.log('Đang lấy giỏ hàng cho người dùng:', userId);
-      const response = await axios.get(`${API_URL}/carts/getAll/${userId}`);
+      const token = localStorage.getItem('login_token');
+      if (!token) {
+        throw new Error('Bạn cần đăng nhập để xem giỏ hàng');
+      }
+
+      const response = await axios.get(`${API_URL}/carts/getAll/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
       if (response.data && response.data.success) {
         console.log('Lấy giỏ hàng thành công:', response.data);
@@ -237,6 +247,30 @@ export const cartService = {
       return response.data;
     } catch (error) {
       console.error('Lỗi khi tạo đơn hàng:', error);
+      throw error;
+    }
+  },
+
+  // Hủy đơn hàng
+  cancelOrder: async (orderId: string): Promise<any> => {
+    try {
+      const token = localStorage.getItem('login_token');
+      if (!token) {
+        throw new Error('Bạn cần đăng nhập để hủy đơn hàng');
+      }
+
+      console.log('Đang hủy đơn hàng ID:', orderId);
+      const response = await axios.delete(`${API_URL}/orders/delete/${orderId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Hủy đơn hàng thành công:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi hủy đơn hàng:', error);
       throw error;
     }
   },

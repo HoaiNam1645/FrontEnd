@@ -53,10 +53,26 @@ const Cart = ({
           return;
         }
         
+        // Kiểm tra token có tồn tại không
+        const token = localStorage.getItem('login_token');
+        if (!token) {
+          console.log('Token không tồn tại hoặc đã hết hạn');
+          // Thông báo cho người dùng đăng nhập lại
+          alert('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
+          // Có thể chuyển hướng đến trang đăng nhập
+          return;
+        }
+        
         console.log('Đang lấy giỏ hàng cho người dùng ID:', userInfo.id);
         await dispatch(fetchCartFromAPI(userInfo.id));
       } catch (error) {
         console.error('Lỗi khi lấy giỏ hàng:', error);
+        // Hiển thị thông báo lỗi cụ thể
+        if (error.response && error.response.status === 401) {
+          alert('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
+        } else {
+          alert('Có lỗi xảy ra khi tải giỏ hàng, vui lòng thử lại sau');
+        }
       }
     };
     

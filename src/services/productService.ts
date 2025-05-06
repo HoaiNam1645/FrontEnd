@@ -13,6 +13,8 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
   rating?: number;
+  ratingAverage?: number;
+  ratingCount?: number;
 }
 
 // Dữ liệu mẫu khi API không hoạt động

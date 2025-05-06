@@ -1,24 +1,28 @@
 import { Fade } from "react-awesome-reveal";
-import { Col } from "react-bootstrap";
 import Slider from "react-slick";
 import TrendingItem from "../trendingItem/TrendingItem";
-import Spinner from "@/components/button/Spinner";
-import { useEffect, useState } from "react";
-import { Product, productService } from "@/services/productService";
+import { Product } from "@/services/productService";
+
+interface SellingProductProps {
+  products?: Product[];
+  onSuccess?: () => void;
+  hasPaginate?: boolean;
+  onError?: () => void;
+}
 
 const SellingProduct = ({
+  products = [],
   onSuccess = () => {},
   hasPaginate = false,
   onError = () => {},
-}) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+}: SellingProductProps) => {
+  // Tính toán số hàng dựa trên số lượng sản phẩm
+  const rowsToShow = Math.min(products.length, 3);
+  
   const settings = {
     dots: false,
-    infinite: true,
-    rows: 3,
+    infinite: false, // Tắt infinite để tránh nhân bản
+    rows: rowsToShow || 1, // Sử dụng số hàng dựa trên số lượng sản phẩm
     arrows: true,
     autoplay: false,
     speed: 500,
@@ -29,90 +33,77 @@ const SellingProduct = ({
         breakpoint: 1200,
         settings: {
           slidesToShow: 1,
-          rows: 3,
+          rows: rowsToShow || 1,
         },
       },
       {
         breakpoint: 1024,
         settings: {
           slidesToShow: 1,
-          rows: 3,
+          rows: rowsToShow || 1,
         },
       },
       {
         breakpoint: 992,
         settings: {
           slidesToShow: 1,
-          rows: 3,
+          rows: rowsToShow || 1,
         },
       },
       {
         breakpoint: 767,
         settings: {
           slidesToShow: 1,
-          rows: 2,
+          rows: Math.min(rowsToShow, 2) || 1,
         },
       },
       {
         breakpoint: 576,
         settings: {
           slidesToShow: 1,
-          rows: 2,
+          rows: Math.min(rowsToShow, 2) || 1,
         },
       },
     ],
   };
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const data = await productService.getAllProducts();
-        console.log('Products data received in SellingProduct component:', data);
-        setProducts(data || []);
-        onSuccess();
-      } catch (err) {
-        setError("Không thể tải sản phẩm");
-        console.error('Error in SellingProduct component:', err);
-        onError();
-      } finally {
-        setLoading(false);
-      }
-    };
+  if (!products || products.length === 0) {
+    return (
+      <div className="gi-all-product-content gi-new-product-content mt-1199-40 wow fadeInUp">
+        <Fade triggerOnce direction="up" delay={800}>
+          <div className="section-title">
+            <div className="section-detail">
+              <h2 className="gi-title">
+                Top <span>Bán chạy</span>
+              </h2>
+            </div>
+          </div>
+          <div className="text-center py-4">Không có sản phẩm</div>
+        </Fade>
+      </div>
+    );
+  }
 
-    fetchProducts();
-  }, []);
-
-  if (error) return <div>Không thể tải sản phẩm</div>;
-  if (loading) return <Spinner />;
+  // Kiểm tra console để xác nhận số lượng sản phẩm
+  console.log('SellingProduct - Số lượng sản phẩm:', products.length, products.map(p => p.name));
 
   return (
-    <>
-      <Col
-        xl={3}
-        lg={6}
-        md={6}
-        sm={12}
-        className="col-xs-6 gi-all-product-content gi-new-product-content mt-1199-40 wow fadeInUp"
-      >
-        <Fade triggerOnce direction="up" delay={800}>
-          <Col md={12}>
-            <div className="section-title">
-              <div className="section-detail">
-                <h2 className="gi-title">
-                  Top <span>Bán chạy</span>
-                </h2>
-              </div>
-            </div>
-          </Col>
-          <Slider {...settings} className="gi-trending-slider">
-            {products.map((item: Product) => (
-              <TrendingItem key={item._id} data={item} />
-            ))}
-          </Slider>
-        </Fade>
-      </Col>
-    </>
+    <div className="gi-all-product-content gi-new-product-content mt-1199-40 wow fadeInUp">
+      <Fade triggerOnce direction="up" delay={800}>
+        <div className="section-title">
+          <div className="section-detail">
+            <h2 className="gi-title">
+              Top <span>Bán chạy</span>
+            </h2>
+          </div>
+        </div>
+        <Slider {...settings} className="gi-trending-slider">
+          {products.map((item: Product, index: number) => (
+            <TrendingItem key={`${item._id}-${index}`} data={item} />
+          ))}
+        </Slider>
+      </Fade>
+    </div>
   );
 };
 

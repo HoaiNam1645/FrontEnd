@@ -296,4 +296,107 @@
   color: #4299e1;
 }
 
+/* Enhanced navigation styling */
+.top-nav .nav-links .nav-link {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  color: #333;
+  text-decoration: none;
+  border-radius: 5px;
+  margin: 0 5px;
+  transition: all 0.3s ease;
+}
+
+.top-nav .nav-links .nav-link:hover {
+  background-color: #f0f4f8;
+  color: #4299e1;
+}
+
+.top-nav .nav-links .nav-link.active {
+  background-color: #ebf8ff;
+  color: #3182ce;
+  font-weight: 500;
+}
+
+.top-nav .nav-links .nav-link svg {
+  margin-right: 8px;
+  font-size: 1.1rem;
+}
+
+/* Add animation to the nav links */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.top-nav .nav-links .nav-link {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Make mobile navigation more responsive */
+@media (max-width: 768px) {
+  .top-nav .nav-left {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .top-nav .nav-links {
+    display: none;
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    background: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    flex-direction: column;
+    padding: 15px;
+    z-index: 1000;
+  }
+  
+  .top-nav .nav-links.show {
+    display: flex;
+  }
+  
+  .top-nav .nav-links .nav-link {
+    width: 100%;
+    margin: 5px 0;
+  }
+}
+
+/* Mobile menu toggle button */
+.mobile-menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #333;
+  cursor: pointer;
+  padding: 5px;
+  margin-left: auto;
+}
+
+@media (max-width: 768px) {
+  .mobile-menu-toggle {
+    display: block;
+  }
+}
+
+/* Add some Bootstrap-like utility classes */
+.d-md-none {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .d-md-none {
+    display: block;
+  }
+}
+
 

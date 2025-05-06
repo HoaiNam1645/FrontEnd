@@ -3,6 +3,7 @@ import { addItem, updateItemQuantity } from "../../../store/reducers/cartSlice";
 import { showSuccessToast } from "@/components/toast-popup/Toastify";
 import { RootState } from "@/store";
 import { Product } from "@/services/productService";
+import Link from "next/link";
 
 const TrendingItem = ({ data }: { data: Product }) => {
   const cartItems = useSelector((state: RootState) => state.cart.items);
@@ -34,17 +35,17 @@ const TrendingItem = ({ data }: { data: Product }) => {
         <div className="gi-all-product-inner">
           <div className="gi-pro-image-outer">
             <div className="gi-pro-image">
-              <a href="/product-left-sidebar" className="image">
+              <Link href={`/product-left-sidebar/${data._id}`} className="image">
                 <img className="main-image" src={data.image_url} alt={data.name} />
-              </a>
+              </Link>
             </div>
           </div>
           <div className="gi-pro-content">
             <h5 className="gi-pro-title">
-              <a href="/product-left-sidebar">{data.name}</a>
+              <Link href={`/product-left-sidebar/${data._id}`}>{data.name}</Link>
             </h5>
             <h6 className="gi-pro-stitle">
-              <a href="/shop-left-sidebar-col-3">{data.description}</a>
+              <Link href={`/category/${data.categoryId}`}>{data.description}</Link>
             </h6>
             <div className="gi-pro-rat-price">
               <div className="gi-pro-rat-pri-inner">

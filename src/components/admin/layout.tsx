@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FaHome, FaChartLine, FaUsers, FaUserShield, FaCog, FaBell, FaList, FaBox, FaSignOutAlt, FaSignInAlt, FaUser } from "react-icons/fa";
+import { FaHome, FaChartLine, FaUsers, FaUserShield, FaCog, FaBell, FaList, FaBox, FaSignOutAlt, FaSignInAlt, FaUser, FaChartBar, FaShoppingCart, FaBars } from "react-icons/fa";
 import CategoryDropdown from "./CategoryDropdown";
 import "./admin.css";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { logout } from "@/store/reducers/registrationSlice";
@@ -20,7 +20,9 @@ export default function AdminLayout({
 }) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useDispatch();
   
   // Lấy thông tin đăng nhập từ Redux store
@@ -72,6 +74,27 @@ export default function AdminLayout({
     }
   };
 
+  // Close dropdown menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isNotificationOpen || isProfileOpen || isMobileMenuOpen) {
+        const target = event.target as HTMLElement;
+        if (!target.closest('.notification-dropdown') && 
+            !target.closest('.profile-dropdown') &&
+            !target.closest('.mobile-menu-toggle')) {
+          setIsNotificationOpen(false);
+          setIsProfileOpen(false);
+          setIsMobileMenuOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isNotificationOpen, isProfileOpen, isMobileMenuOpen]);
+
   return (
     <div className="modern-wrapper">
       <ToastContainer
@@ -100,29 +123,36 @@ export default function AdminLayout({
             <span className="brand-name">Admin</span>
           </Link>
 
-          <div className="nav-links">
-            <Link href="/dashboard" className="nav-link">
+          <button 
+            className="mobile-menu-toggle d-md-none" 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <FaBars />
+          </button>
+
+          <div className={`nav-links ${isMobileMenuOpen ? 'show' : ''}`}>
+            <Link href="/dashboard" className={`nav-link ${pathname === '/dashboard' ? 'active' : ''}`}>
               <FaHome />
-              <span>Tin Tức</span>
+              <span>Trang Chủ</span>
             </Link>
-            <Link href="/analytics" className="nav-link">
-              <FaChartLine />
-              <span>Thống Kê</span>
+            <Link href="/analytics" className={`nav-link ${pathname === '/analytics' ? 'active' : ''}`}>
+              <FaChartBar />
+              <span>Phân Tích Doanh Thu</span>
             </Link>
-            <Link href="/admin" className="nav-link">
+            <Link href="/admin" className={`nav-link ${pathname === '/admin' ? 'active' : ''}`}>
               <FaUserShield />
               <span>Quản Trị Viên</span>
             </Link>
-            <Link href="/user" className="nav-link">
+            <Link href="/user" className={`nav-link ${pathname === '/user' ? 'active' : ''}`}>
               <FaUsers />
               <span>Người Dùng</span>
             </Link>
-            <Link href="/orders-admin" className="nav-link">
-              <FaUsers />
+            <Link href="/orders-admin" className={`nav-link ${pathname === '/orders-admin' ? 'active' : ''}`}>
+              <FaShoppingCart />
               <span>Đơn Hàng</span>
             </Link>
             <CategoryDropdown />
-            <Link href="/product" className="nav-link">
+            <Link href="/product" className={`nav-link ${pathname === '/product' ? 'active' : ''}`}>
               <FaBox />
               <span>Sản Phẩm</span>
             </Link>

@@ -230,14 +230,40 @@ const SingleProductContent = ({
               </h5>
               <div className="gi-single-rating-wrap" style={{ marginBottom: "20px" }}>
                 <div className="gi-single-rating">
-                  <i className="gicon gi-star fill" style={{ fontSize: "18px" }}></i>
-                  <i className="gicon gi-star fill" style={{ fontSize: "18px" }}></i>
-                  <i className="gicon gi-star fill" style={{ fontSize: "18px" }}></i>
-                  <i className="gicon gi-star fill" style={{ fontSize: "18px" }}></i>
-                  <i className="gicon gi-star-o" style={{ fontSize: "18px" }}></i>
+                  {productData && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <i 
+                            key={star}
+                            className={`gicon ${star <= Math.round(productData.ratingAverage || 0) ? 'gi-star fill' : 'gi-star-o'}`} 
+                            style={{ fontSize: "18px", color: star <= Math.round(productData.ratingAverage || 0) ? '#ffc107' : '#ccc' }}
+                          ></i>
+                        ))}
+                        {productData.ratingAverage ? (
+                          <span style={{ marginLeft: '8px', fontSize: '16px', color: '#666' }}>
+                            {productData.ratingAverage.toFixed(1)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </>
+                  )}
+                  {!productData && (
+                    <>
+                      <i className="gicon gi-star fill" style={{ fontSize: "18px" }}></i>
+                      <i className="gicon gi-star fill" style={{ fontSize: "18px" }}></i>
+                      <i className="gicon gi-star fill" style={{ fontSize: "18px" }}></i>
+                      <i className="gicon gi-star fill" style={{ fontSize: "18px" }}></i>
+                      <i className="gicon gi-star-o" style={{ fontSize: "18px" }}></i>
+                    </>
+                  )}
                 </div>
                 <span className="gi-read-review" style={{ fontSize: "16px" }}>
-                  |&nbsp;&nbsp;<a href="#gi-spt-nav-review">992 Đánh giá</a>
+                  |&nbsp;&nbsp;<a href="#gi-spt-nav-review">
+                    {productData && productData.ratingCount !== undefined
+                      ? `${productData.ratingCount} Đánh giá`
+                      : "992 Đánh giá"}
+                  </a>
                 </span>
               </div>
 

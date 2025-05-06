@@ -19,7 +19,7 @@ apiClient.interceptors.request.use(
     const user = userData ? JSON.parse(userData) : null;
     
     // Nếu có token trong localStorage, thêm vào header
-    const token = localStorage.getItem('token') || user?.token;
+    const token = localStorage.getItem('login_token') || user?.token;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

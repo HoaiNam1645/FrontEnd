@@ -15,6 +15,7 @@ import { RootState, AppDispatch } from "@/store";
 import { addWishlist, removeWishlist } from "@/store/reducers/wishlistSlice";
 import { addCompare, removeCompareItem } from "@/store/reducers/compareSlice";
 import { Product } from "@/services/productService";
+import { API_DOMAIN } from "@/components/shop-sidebar/Shop";
 
 interface ItemCardProps {
   data: Product;
@@ -62,12 +63,18 @@ const ItemCard = ({ data }: ItemCardProps) => {
   const getImageUrl = (url: string | undefined) => {
     if (!url) return defaultImg;
     
-    // Nếu là đường dẫn từ localhost:5000, thử sử dụng
-    if (url.includes('localhost:5000')) {
+    // Nếu là đường dẫn đầy đủ, sử dụng trực tiếp
+    if (url.startsWith('http')) {
       return url;
     }
     
-    return url || defaultImg;
+    // Thêm domain cho đường dẫn tương đối
+    if (url.startsWith('/')) {
+      return `${API_DOMAIN}${url}`;
+    }
+    
+    // Nếu không có / ở đầu, thêm vào
+    return `${API_DOMAIN}/${url}`;
   };
 
   useEffect(() => {
@@ -272,9 +279,6 @@ const ItemCard = ({ data }: ItemCardProps) => {
             </div>
           </div>
           <div className="gi-pro-content">
-            <div className="gi-pro-rating">
-              <StarRating rating={data.rating || 0} />
-            </div>
             <h5 className="gi-pro-title">
               <Link href={getProductDetailUrl()}>{data.name}</Link>
             </h5>
@@ -321,7 +325,16 @@ const ItemCard = ({ data }: ItemCardProps) => {
             `}</style>
             <div className="gi-pro-rat-price">
               <span className="gi-pro-rating">
-                <StarRating rating={5} />
+                <StarRating rating={data.ratingAverage || 0} />
+                <span className="rating-info" style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  fontSize: '12px', 
+                  color: '#777', 
+                  marginLeft: '5px' 
+                }}>
+                  {data?.ratingCount && data?.ratingCount > 0 ? `(${data.ratingCount} đánh giá)` : ''}
+                </span>
                 <span className="qty">Còn lại: {data.stock}</span>
               </span>
               <span className="gi-price">

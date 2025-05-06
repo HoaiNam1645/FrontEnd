@@ -15,6 +15,16 @@ interface User {
   [key: string]: any;
 }
 
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  image_url: string;
+}
+
+// API domain for images
+const API_DOMAIN = "http://localhost:5001";
+
 function HeaderTwo({ cartItems, wishlistItems }) {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
@@ -25,6 +35,8 @@ function HeaderTwo({ cartItems, wishlistItems }) {
   const user = useSelector((state: RootState) => state.registration.user) as User | null;
   const { searchTerm } = useSelector((state: RootState) => state.filter);
   const [searchInput, setSearchInput] = useState(searchTerm || "");
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   useEffect(() => {
     const userdata = localStorage.getItem("login_user") ?? "";
@@ -39,6 +51,43 @@ function HeaderTwo({ cartItems, wishlistItems }) {
     }
   }, [isAuthenticated, user, dispatch]);
 
+  // Search products function
+  const searchProducts = async (query: string) => {
+    if (query.trim().length > 0) {
+      try {
+        const response = await fetch('http://localhost:5001/api/products/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: query }),
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setSearchResults(result.data);
+          setShowSearchResults(true);
+        }
+      } catch (error) {
+        console.error('Error searching products:', error);
+      }
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+  };
+
+  // Search products when input changes
+  useEffect(() => {
+    // Debounce search to avoid too many API calls
+    const timeoutId = setTimeout(() => {
+      searchProducts(searchInput);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchInput]);
+
   const handleSearch = (event: any) => {
     setSearchInput(event.target.value);
   };
@@ -46,8 +95,26 @@ function HeaderTwo({ cartItems, wishlistItems }) {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     dispatch(setSearchTerm(searchInput));
-    router.push("/shop-full-width-col-4");
+    // Explicitly trigger search and show results
+    searchProducts(searchInput);
   };
+
+  const handleProductClick = (productId: string) => {
+    setShowSearchResults(false);
+    router.push(`/product-left-sidebar/${productId}`);
+  };
+
+  const handleClickOutside = () => {
+    setShowSearchResults(false);
+  };
+
+  useEffect(() => {
+    // Add click event listener to detect clicks outside search results
+    document.addEventListener('click', handleClickOutside);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
 
   const openCart = () => {
     setIsCartOpen(true);
@@ -89,12 +156,13 @@ function HeaderTwo({ cartItems, wishlistItems }) {
               </div>
               {/* <!-- Header Logo End -->
                         <!-- Header Search Start --> */}
-              <div className="align-self-center gi-header-search">
+              <div className="align-self-center gi-header-search position-relative">
                 <div className="header-search">
                   <form
                     onSubmit={handleSubmit}
                     className="gi-search-group-form"
                     action="#"
+                    onClick={(e) => e.stopPropagation()}
                   >
                     <input
                       className="form-control gi-search-bar"
@@ -108,6 +176,100 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                     </button>
                   </form>
                 </div>
+                {/* Search Results Dropdown */}
+                {showSearchResults && searchResults.length > 0 && (
+                  <div 
+                    className="search-results-dropdown" 
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 5px)',
+                      left: 0,
+                      right: 0,
+                      backgroundColor: '#fff',
+                      boxShadow: '0 8px 16px rgba(0, 0, 0, 0.15)',
+                      borderRadius: '8px',
+                      zIndex: 1000,
+                      maxHeight: '400px',
+                      overflowY: 'auto',
+                      border: '1px solid #eaeaea'
+                    }}
+                  >
+                    <div style={{ padding: '15px 15px 5px', borderBottom: '1px solid #eaeaea' }}>
+                      <h5 style={{ margin: 0, fontSize: '16px', color: '#333' }}>Kết quả tìm kiếm ({searchResults.length})</h5>
+                    </div>
+                    <div className="search-results-container">
+                      {searchResults.map((product) => (
+                        <div 
+                          key={product._id}
+                          className="search-item"
+                          onClick={() => handleProductClick(product._id)}
+                          style={{
+                            padding: '12px 15px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            borderBottom: '1px solid #f5f5f5',
+                            cursor: 'pointer',
+                            transition: 'background-color 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9f9f9'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#fff'}
+                        >
+                          <div className="product-image" style={{ 
+                            marginRight: '15px', 
+                            width: '70px', 
+                            height: '70px',
+                            borderRadius: '6px',
+                            overflow: 'hidden',
+                            border: '1px solid #eaeaea'
+                          }}>
+                            <img 
+                              src={product.image_url.startsWith('http') ? product.image_url : `${API_DOMAIN}${product.image_url}`} 
+                              alt={product.name} 
+                              style={{ 
+                                width: '100%', 
+                                height: '100%', 
+                                objectFit: 'cover',
+                                transition: 'transform 0.3s ease'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            />
+                          </div>
+                          <div className="product-info" style={{ flex: 1 }}>
+                            <div className="product-name" style={{ 
+                              fontWeight: 'bold', 
+                              fontSize: '15px',
+                              marginBottom: '5px',
+                              color: '#333'
+                            }}>{product.name}</div>
+                            <div className="product-price" style={{
+                              color: '#ff6b6b',
+                              fontWeight: 'bold',
+                              fontSize: '14px'
+                            }}>
+                              {new Intl.NumberFormat('vi-VN', {
+                                style: 'currency',
+                                currency: 'VND'
+                              }).format(product.price)}
+                            </div>
+                          </div>
+                          <div className="action-icon" style={{ color: '#aaa' }}>
+                            <i className="fi-rr-angle-right"></i>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ 
+                      padding: '10px 15px', 
+                      textAlign: 'center', 
+                      borderTop: '1px solid #eaeaea',
+                      fontSize: '14px'
+                    }}>
+                      
+                    </div>
+                  </div>
+                )}
               </div>
               {/* <!-- Header Search End -->
                         <!-- Header Button Start --> */}

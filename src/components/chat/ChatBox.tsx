@@ -90,6 +90,97 @@ const Message = styled(Box)(({ theme, role }) => ({
   backgroundColor: role === 'user' ? theme.palette.primary.main : theme.palette.grey[100],
   color: role === 'user' ? theme.palette.primary.contrastText : theme.palette.text.primary,
   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  '& a': {
+    textDecoration: 'none',
+    color: theme.palette.primary.main,
+    fontWeight: 500,
+    transition: 'color 0.2s',
+    '&:hover': {
+      color: theme.palette.primary.dark,
+      textDecoration: 'underline',
+    },
+  },
+  '& strong': {
+    fontWeight: 600,
+  },
+  '& .product-recommendation': {
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #e0e0e0',
+    borderRadius: theme.spacing(1.5),
+    padding: theme.spacing(2),
+    marginTop: theme.spacing(1.5),
+    marginBottom: theme.spacing(1),
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(1.5),
+    boxShadow: '0 2px 5px rgba(0,0,0,0.06)',
+    position: 'relative',
+    animation: 'fadeInUp 0.5s ease-out forwards',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: '-4px',
+      left: 0,
+      right: 0,
+      height: '4px',
+      background: 'linear-gradient(90deg, #3f51b5, #f50057)',
+      borderRadius: '4px 4px 0 0',
+    },
+    '@keyframes fadeInUp': {
+      '0%': {
+        opacity: 0,
+        transform: 'translateY(10px)',
+      },
+      '100%': {
+        opacity: 1,
+        transform: 'translateY(0)',
+      },
+    },
+  },
+  '& .product-link': {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: theme.spacing(0.5),
+    backgroundColor: theme.palette.primary.main,
+    color: '#fff',
+    padding: `${theme.spacing(0.7)} ${theme.spacing(1.5)}`,
+    borderRadius: theme.spacing(5),
+    fontSize: '0.95rem',
+    fontWeight: 600,
+    transition: 'all 0.25s ease',
+    textDecoration: 'none',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+    marginTop: theme.spacing(1),
+    marginBottom: theme.spacing(0.5),
+    '&:hover': {
+      backgroundColor: theme.palette.primary.dark,
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+      textDecoration: 'none',
+    },
+    animation: 'pulse 1.5s infinite alternate',
+    '@keyframes pulse': {
+      '0%': {
+        boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+      },
+      '100%': {
+        boxShadow: '0 4px 8px rgba(63, 81, 181, 0.4)',
+      },
+    },
+  },
+  '& .emoji': {
+    fontSize: '1.25rem',
+  },
+  '& .price-info': {
+    color: '#e53935',
+    fontWeight: 600,
+    fontSize: '0.95rem',
+  },
+  '& .product-detail': {
+    fontSize: '0.95rem',
+    color: theme.palette.text.secondary,
+    margin: `${theme.spacing(1)} 0`,
+  }
 }));
 
 const InputContainer = styled(Box)(({ theme }) => ({
@@ -111,6 +202,53 @@ const StyledButton = styled(Button)(({ theme }) => ({
   borderRadius: theme.spacing(2),
   minWidth: 'auto',
   padding: theme.spacing(1),
+}));
+
+const TypingIndicator = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  marginBottom: theme.spacing(2),
+}));
+
+const TypingDots = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: theme.spacing(0.5),
+  padding: theme.spacing(1.5),
+  backgroundColor: theme.palette.grey[100],
+  borderRadius: theme.spacing(2),
+  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  '& .dot': {
+    width: '8px',
+    height: '8px',
+    backgroundColor: theme.palette.grey[400],
+    borderRadius: '50%',
+    animation: 'typingAnimation 1.5s infinite ease-in-out',
+  },
+  '& .dot:nth-of-type(1)': {
+    animationDelay: '0s',
+  },
+  '& .dot:nth-of-type(2)': {
+    animationDelay: '0.3s',
+  },
+  '& .dot:nth-of-type(3)': {
+    animationDelay: '0.6s',
+  },
+  '@keyframes typingAnimation': {
+    '0%': {
+      transform: 'scale(1)',
+      opacity: 0.5,
+    },
+    '50%': {
+      transform: 'scale(1.5)',
+      opacity: 1,
+    },
+    '100%': {
+      transform: 'scale(1)',
+      opacity: 0.5,
+    },
+  },
 }));
 
 interface ChatMessage {
@@ -224,9 +362,50 @@ export default function ChatBox() {
       });
 
       if (response.data.success) {
+        // Format the response if it contains product data
+        let formattedContent = response.data.data;
+        
+        if (formattedContent.includes('href="/product-left-sidebar/')) {
+          // Wrap the entire content in a product recommendation div
+          formattedContent = `<div class="product-recommendation">${formattedContent}</div>`;
+          
+          // Convert the plain 🛒 emoji to a styled span
+          formattedContent = formattedContent.replace('🛒', '<span class="emoji">🛒</span>');
+          
+          // Make the product link more attractive
+          formattedContent = formattedContent.replace(
+            /<a href="(\/product-left-sidebar\/[^"]+)"[^>]*><span class="emoji">🛒<\/span>\s*<strong>([^<]+)<\/strong><\/a>/g,
+            '<a href="$1" class="product-link" target="_blank"><span class="emoji">🛒</span> <strong>$2</strong></a>'
+          );
+
+          // Highlight price information
+          formattedContent = formattedContent.replace(
+            /(\d+(\.\d+)?\s*(triệu|nghìn|đồng))/g, 
+            '<span class="price-info">$1</span>'
+          );
+
+          // Style additional product details
+          formattedContent = formattedContent.replace(
+            /(còn \d+ sản phẩm)/g,
+            '<span class="product-detail">$1</span>'
+          );
+
+          // Add more styling for product category
+          formattedContent = formattedContent.replace(
+            /(trong danh mục ([^\.]+))/g,
+            'trong danh mục <strong>$2</strong>'
+          );
+
+          // Style emoji at the end
+          formattedContent = formattedContent.replace(
+            /(📱🛍️)/g,
+            '<span class="emoji">$1</span>'
+          );
+        }
+        
         const botMessage: ChatMessage = {
           role: 'system',
-          content: response.data.data,
+          content: formattedContent,
           _id: (Date.now() + 1).toString(),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -241,6 +420,11 @@ export default function ChatBox() {
     } finally {
       setSending(false);
     }
+  };
+
+  // Add this utility function for safely rendering HTML
+  const createMarkup = (html: string) => {
+    return { __html: html };
   };
 
   if (userRole !== 'user') {
@@ -291,13 +475,42 @@ export default function ChatBox() {
                     {message.role === 'user' ? <PersonIcon /> : <SmartToyIcon />}
                   </Avatar>
                   <Message role={message.role}>
-                    <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
-                      {message.content}
-                    </Typography>
+                    {message.role === 'user' ? (
+                      <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
+                        {message.content}
+                      </Typography>
+                    ) : (
+                      <Typography 
+                        variant="body2" 
+                        sx={{ wordBreak: 'break-word' }}
+                        dangerouslySetInnerHTML={createMarkup(message.content)}
+                      />
+                    )}
                   </Message>
                 </MessageWrapper>
               ))
             )}
+            
+            {/* Typing indicator */}
+            {sending && (
+              <TypingIndicator>
+                <Avatar 
+                  sx={{ 
+                    width: 36,
+                    height: 36,
+                    bgcolor: 'secondary.main',
+                  }}
+                >
+                  <SmartToyIcon />
+                </Avatar>
+                <TypingDots>
+                  <span className="dot"></span>
+                  <span className="dot"></span>
+                  <span className="dot"></span>
+                </TypingDots>
+              </TypingIndicator>
+            )}
+            
             <div ref={messagesEndRef} />
           </MessageContainer>
 

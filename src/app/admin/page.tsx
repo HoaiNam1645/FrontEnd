@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { FaEdit, FaTrash, FaEye, FaPlus, FaKey, FaUser } from "react-icons/fa";
+import { FaEdit, FaTrash, FaEye, FaPlus, FaKey, FaUser, FaChartBar } from "react-icons/fa";
 import "./admin.css";
 import axios from "axios";
 import AdminRoute from "@/components/protected-route/AdminRoute";
@@ -70,6 +70,9 @@ function AdminList() {
       <div className="page-header">
         <h1>Quản Lý Admin</h1>
         <div>
+          <Link href="/analytics" className="btn btn-primary me-2">
+            <FaChartBar /> Phân Tích Doanh Thu
+          </Link>
           <Link href="/admin/profile" className="btn btn-secondary me-2">
             <FaUser /> Thông tin cá nhân
           </Link>

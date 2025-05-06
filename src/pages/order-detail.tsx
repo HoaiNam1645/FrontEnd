@@ -22,6 +22,10 @@ const OrderDetailPage = ({ orderId }: OrderDetailPageProps) => {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelSuccess, setCancelSuccess] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   useEffect(() => {
     // Check for status parameter in URL
@@ -203,6 +207,32 @@ const OrderDetailPage = ({ orderId }: OrderDetailPageProps) => {
     }
   };
 
+  const handleCancelOrder = async (orderId: string) => {
+    try {
+      setCancelLoading(true);
+      setCancelError(null);
+      
+      console.log('Đang hủy đơn hàng ID:', orderId);
+      await cartService.cancelOrder(orderId);
+      
+      setCancelSuccess(true);
+      setShowCancelModal(false);
+      
+      // Thông báo thành công và chuyển hướng sau 1.5 giây
+      setTimeout(() => {
+        // Chuyển hướng về trang track-order
+        router.push('/track-order');
+      }, 1500);
+      
+    } catch (err) {
+      console.error('Lỗi khi hủy đơn hàng:', err);
+      setCancelError(err instanceof Error ? err.message : 'Lỗi không xác định khi hủy đơn hàng');
+      setShowCancelModal(false);
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
   if (!login) {
     return (
       <div className="container py-5">
@@ -221,9 +251,76 @@ const OrderDetailPage = ({ orderId }: OrderDetailPageProps) => {
       <div className="row justify-content-center">
         <div className="col-lg-10">
           {paymentSuccess && (
-            <div className="payment-success-alert">
-              <i className="gicon gi-check-circle"></i>
-              Thanh toán đơn hàng thành công! Cảm ơn bạn đã mua sắm.
+            <div className="alert-custom alert-success-custom">
+              <div className="alert-icon">
+                <i className="gicon gi-check-circle"></i>
+              </div>
+              <div className="alert-content">
+                <h4>Thanh toán thành công!</h4>
+                <p>Đơn hàng của bạn đã được thanh toán. Cảm ơn bạn đã mua sắm.</p>
+              </div>
+            </div>
+          )}
+          
+          {cancelSuccess && (
+            <div className="alert-custom alert-success-custom">
+              <div className="alert-icon">
+                <i className="gicon gi-check-circle"></i>
+              </div>
+              <div className="alert-content">
+                <h4>Hủy đơn hàng thành công!</h4>
+                <p>Đơn hàng của bạn đã được hủy thành công.</p>
+              </div>
+            </div>
+          )}
+          
+          {cancelError && (
+            <div className="alert-custom alert-danger-custom">
+              <div className="alert-icon">
+                <i className="gicon gi-exclamation-triangle"></i>
+              </div>
+              <div className="alert-content">
+                <h4>Không thể hủy đơn hàng</h4>
+                <p>{cancelError}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Cancel Confirmation Modal */}
+          {showCancelModal && order && (
+            <div className="cancel-modal-overlay">
+              <div className="cancel-modal">
+                <div className="cancel-modal-header">
+                  <i className="gicon gi-exclamation-circle"></i>
+                  <h3>Xác nhận hủy đơn hàng</h3>
+                </div>
+                <div className="cancel-modal-body">
+                  <p>Bạn có chắc chắn muốn hủy đơn hàng <strong>#{order._id.substring(order._id.length - 8)}</strong>?</p>
+                  <p>Hành động này không thể hoàn tác sau khi đã xác nhận.</p>
+                </div>
+                <div className="cancel-modal-footer">
+                  <button 
+                    className="cancel-modal-close-btn" 
+                    onClick={() => setShowCancelModal(false)}
+                    disabled={cancelLoading}
+                  >
+                    Giữ đơn hàng
+                  </button>
+                  <button 
+                    className="cancel-modal-confirm-btn" 
+                    onClick={() => handleCancelOrder(order._id)}
+                    disabled={cancelLoading}
+                  >
+                    {cancelLoading ? (
+                      <>
+                        <span className="loading-spinner"></span> Đang hủy...
+                      </>
+                    ) : (
+                      <>Xác nhận hủy</>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
           
@@ -399,8 +496,21 @@ const OrderDetailPage = ({ orderId }: OrderDetailPageProps) => {
                           </>
                         )}
                       </button>
-                      <button className="cancel-btn" style={{ backgroundColor: getThemeColor('canceled') }}>
-                        <i className="gicon gi-times"></i> Hủy đơn hàng
+                      <button 
+                        className="cancel-btn" 
+                        style={{ backgroundColor: getThemeColor('canceled') }}
+                        onClick={() => setShowCancelModal(true)}
+                        disabled={cancelLoading}
+                      >
+                        {cancelLoading ? (
+                          <>
+                            <span className="loading-spinner"></span> Đang Xoá...
+                          </>
+                        ) : (
+                          <>
+                            <i className="gicon gi-times"></i> Xoá đơn hàng
+                          </>
+                        )}
                       </button>
                     </>
                   )}
@@ -408,9 +518,14 @@ const OrderDetailPage = ({ orderId }: OrderDetailPageProps) => {
               </div>
               
               {paymentError && (
-                <div className="payment-error-alert">
-                  <i className="gicon gi-exclamation-triangle"></i>
-                  {paymentError}
+                <div className="alert-custom alert-danger-custom">
+                  <div className="alert-icon">
+                    <i className="gicon gi-exclamation-triangle"></i>
+                  </div>
+                  <div className="alert-content">
+                    <h4>Lỗi thanh toán</h4>
+                    <p>{paymentError}</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -979,6 +1094,273 @@ const OrderDetailPage = ({ orderId }: OrderDetailPageProps) => {
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(-10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .cancel-success-alert {
+          display: flex;
+          align-items: center;
+          background-color: #e8f5e9;
+          color: #2e7d32;
+          padding: 15px 20px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          border-left: 4px solid #2e7d32;
+        }
+        
+        .cancel-success-alert i {
+          font-size: 20px;
+          margin-right: 10px;
+          color: #2e7d32;
+        }
+        
+        .cancel-error-alert {
+          display: flex;
+          align-items: center;
+          background-color: #ffebee;
+          color: #c62828;
+          padding: 15px 20px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          border-left: 4px solid #c62828;
+        }
+        
+        .cancel-error-alert i {
+          font-size: 20px;
+          margin-right: 10px;
+          color: #c62828;
+        }
+        
+        .loading-spinner {
+          display: inline-block;
+          width: 14px;
+          height: 14px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-radius: 50%;
+          border-top-color: #fff;
+          animation: spin 1s linear infinite;
+          margin-right: 8px;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        /* Custom Alerts */
+        .alert-custom {
+          display: flex;
+          align-items: stretch;
+          border-radius: 12px;
+          margin-bottom: 25px;
+          overflow: hidden;
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+          animation: slideDown 0.4s ease-out forwards;
+          transform-origin: top center;
+        }
+        
+        @keyframes slideDown {
+          0% {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.98);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        .alert-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 20px;
+          font-size: 24px;
+        }
+        
+        .alert-content {
+          padding: 16px 20px;
+          flex-grow: 1;
+        }
+        
+        .alert-content h4 {
+          margin: 0 0 5px 0;
+          font-size: 17px;
+          font-weight: 600;
+        }
+        
+        .alert-content p {
+          margin: 0;
+          font-size: 14px;
+          opacity: 0.9;
+        }
+        
+        .alert-success-custom {
+          background-color: #f0f9f0;
+          border-left: 5px solid #4caf50;
+        }
+        
+        .alert-success-custom .alert-icon {
+          background-color: rgba(76, 175, 80, 0.1);
+          color: #4caf50;
+        }
+        
+        .alert-danger-custom {
+          background-color: #fef5f5;
+          border-left: 5px solid #f44336;
+        }
+        
+        .alert-danger-custom .alert-icon {
+          background-color: rgba(244, 67, 54, 0.1);
+          color: #f44336;
+        }
+        
+        @media (max-width: 576px) {
+          .alert-custom {
+            flex-direction: column;
+          }
+          
+          .alert-icon {
+            padding: 15px 0 0 0;
+          }
+        }
+        
+        /* Existing alerts styles can be removed or kept as fallback */
+        .payment-success-alert,
+        .cancel-success-alert,
+        .cancel-error-alert,
+        .payment-error-alert {
+          display: none; /* Hide old alerts */
+        }
+
+        /* Cancel Modal */
+        .cancel-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          animation: fadeIn 0.2s ease-out;
+        }
+        
+        .cancel-modal {
+          width: 90%;
+          max-width: 500px;
+          background-color: white;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+          animation: scaleIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        
+        .cancel-modal-header {
+          background-color: #ffebee;
+          color: #c62828;
+          padding: 20px;
+          text-align: center;
+          border-bottom: 1px solid #ffcdd2;
+        }
+        
+        .cancel-modal-header i {
+          font-size: 40px;
+          margin-bottom: 10px;
+          display: block;
+        }
+        
+        .cancel-modal-header h3 {
+          margin: 0;
+          font-size: 20px;
+          font-weight: 600;
+        }
+        
+        .cancel-modal-body {
+          padding: 25px;
+          text-align: center;
+        }
+        
+        .cancel-modal-body p {
+          margin: 0 0 15px 0;
+          color: #555;
+          font-size: 15px;
+          line-height: 1.5;
+        }
+        
+        .cancel-modal-body p:last-child {
+          margin-bottom: 0;
+          color: #888;
+          font-size: 14px;
+        }
+        
+        .cancel-modal-footer {
+          padding: 15px 25px 25px;
+          display: flex;
+          justify-content: center;
+          gap: 15px;
+        }
+        
+        .cancel-modal-close-btn, 
+        .cancel-modal-confirm-btn {
+          padding: 12px 25px;
+          border-radius: 6px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border: none;
+          font-size: 15px;
+          min-width: 130px;
+        }
+        
+        .cancel-modal-close-btn {
+          background-color: #f5f5f5;
+          color: #333;
+        }
+        
+        .cancel-modal-close-btn:hover {
+          background-color: #e0e0e0;
+        }
+        
+        .cancel-modal-confirm-btn {
+          background-color: #c62828;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .cancel-modal-confirm-btn:hover {
+          background-color: #b71c1c;
+          box-shadow: 0 4px 8px rgba(198, 40, 40, 0.2);
+        }
+        
+        .cancel-modal-confirm-btn:disabled,
+        .cancel-modal-close-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+        
+        @media (max-width: 576px) {
+          .cancel-modal-footer {
+            flex-direction: column;
+          }
+          
+          .cancel-modal-close-btn, 
+          .cancel-modal-confirm-btn {
+            width: 100%;
+          }
         }
       `}</style>
     </div>

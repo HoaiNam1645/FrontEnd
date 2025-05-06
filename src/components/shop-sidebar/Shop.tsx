@@ -19,6 +19,9 @@ import Paginantion from "../paginantion/Paginantion";
 import { productService, Product } from "@/services/productService";
 import { useSearchParams } from "next/navigation";
 
+// API domain for images - to be used across the application
+export const API_DOMAIN = "http://localhost:5001";
+
 const Shop = ({
   xl = 4,
   lg = 12,
@@ -32,9 +35,10 @@ const Shop = ({
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
   const dispatch = useDispatch();
   const searchParams = useSearchParams();
-  const categoryId = searchParams.get("categoryId");
+  const categoryId = searchParams?.get("categoryId");
   const {
     selectedCategory,
     selectedWeight,
@@ -64,7 +68,32 @@ const Shop = ({
 
     fetchProducts();
   }, []);
- 
+
+  // Function to fetch products with sort order
+  const fetchSortedProducts = async (sortOrder: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:5001/api/products/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sort: sortOrder }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setProducts(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching sorted products:', error);
+      setError("Không thể tải sản phẩm đã sắp xếp");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (categoryId && categoryId !== "67e666ae0a4c7a283acd2a18") {
       dispatch(setSelectedCategory([categoryId]));
@@ -139,6 +168,7 @@ const Shop = ({
   useEffect(() => {
     dispatch(setSearchTerm(""));
     setCurrentPage(1);
+    setLocalSearchTerm("");
   }, [dispatch]);
 
   const handlePriceChange = useCallback(
@@ -151,8 +181,12 @@ const Shop = ({
 
   const handleSortChange = useCallback(
     (event: React.ChangeEvent<HTMLSelectElement>) => {
-      dispatch(setSortOption(event.target.value));
+      const sortValue = event.target.value;
+      dispatch(setSortOption(sortValue));
       setCurrentPage(1);
+      
+      // Directly use the selected value as the sort parameter
+      fetchSortedProducts(sortValue);
     },
     [dispatch]
   );
@@ -193,6 +227,18 @@ const Shop = ({
     setCurrentPage(page);
   };
 
+  // Handle local search input change
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalSearchTerm(e.target.value);
+  };
+
+  // Handle search submission
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    dispatch(setSearchTerm(localSearchTerm));
+    setCurrentPage(1);
+  };
+
   if (error) return <div>{error}</div>;
 
   return (
@@ -204,8 +250,8 @@ const Shop = ({
           className={`margin-b-30 gi-shop-rightside ${order}`}
         >
           {/* <!-- Shop Top Start --> */}
-          <div className="gi-pro-list-top d-flex">
-            <div className="col-md-6 gi-grid-list">
+          <div className="gi-pro-list-top d-flex flex-wrap">
+            <div className="col-md-6 col-12 gi-grid-list">
               <div className="gi-gl-btn">
                 <button
                   className={`grid-btn btn-grid-50 ${
@@ -215,34 +261,82 @@ const Shop = ({
                 >
                   <i className="fi fi-rr-apps"></i>
                 </button>
-                <button
-                  className={`grid-btn btn-list-50 ${
-                    isGridView ? "active" : ""
-                  }`}
-                  onClick={() => toggleView(true)}
-                >
-                  <i className="fi fi-rr-list"></i>
-                </button>
+                
               </div>
             </div>
-            <div className="col-md-6 gi-sort-select">
-              <div className="gi-select-inner">
-                <select
-                  name="gi-select"
-                  id="gi-select"
-                  onChange={handleSortChange}
-                  defaultValue=""
-                >
-                  <option value="" disabled>
-                    Sắp xếp theo
-                  </option>
-                  <option value="1">Vị trí</option>
-                  <option value="2">Liên quan</option>
-                  <option value="3">Tên, A đến Z</option>
-                  <option value="4">Tên, Z đến A</option>
-                  <option value="5">Giá, thấp đến cao</option>
-                  <option value="6">Giá, cao đến thấp</option>
-                </select>
+            <div className="col-md-6 col-12 d-flex align-items-center">
+              {/* <!-- Sort Select --> */}
+              <div className="col-md-6 col-6 gi-sort-select pe-0">
+                <div className="gi-select-inner">
+                  <select
+                    name="gi-select"
+                    id="gi-select"
+                    onChange={handleSortChange}
+                    defaultValue=""
+                    style={{
+                      height: '44px',
+                      borderRadius: '30px 0 0 30px',
+                      border: '1px solid #e0e0e0',
+                      borderRight: 'none',
+                      padding: '0 15px',
+                      backgroundColor: '#f8f8f8',
+                      fontSize: '14px',
+                      width: '100%',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="" disabled>
+                      Sắp xếp theo
+                    </option>
+                    <option value="ASC">Giá, thấp đến cao</option>
+                    <option value="DESC">Giá, cao đến thấp</option>
+                  </select>
+                </div>
+              </div>
+              {/* <!-- Search input --> */}
+              <div className="col-md-6 col-6 gi-search-area ps-0">
+                <form onSubmit={handleSearchSubmit} className="gi-search-form">
+                  <div className="gi-search-inner position-relative">
+                    <input
+                      type="text"
+                      className="form-control gi-search-input"
+                      placeholder="Tìm kiếm sản phẩm..."
+                      value={localSearchTerm}
+                      onChange={handleSearchInputChange}
+                      style={{
+                        borderRadius: '0 30px 30px 0',
+                        padding: '10px 45px 10px 15px',
+                        border: '1px solid #e0e0e0',
+                        fontSize: '14px',
+                        height: '44px',
+                        width: '100%',
+                        transition: 'all 0.3s ease',
+                        outline: 'none'
+                      }}
+                    />
+                    <button 
+                      type="submit" 
+                      className="search-submit-btn"
+                      style={{
+                        position: 'absolute',
+                        right: '10px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        padding: '8px',
+                        cursor: 'pointer',
+                        color: '#666',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <i className="fi fi-rr-search"></i>
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
