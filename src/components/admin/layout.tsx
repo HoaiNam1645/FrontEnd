@@ -137,7 +137,7 @@ export default function AdminLayout({
             </Link>
             <Link href="/analytics" className={`nav-link ${pathname === '/analytics' ? 'active' : ''}`}>
               <FaChartBar />
-              <span>Phân Tích Doanh Thu</span>
+              <span>Thống kê</span>
             </Link>
             <Link href="/admin" className={`nav-link ${pathname === '/admin' ? 'active' : ''}`}>
               <FaUserShield />
@@ -198,17 +198,7 @@ export default function AdminLayout({
                 className="profile-btn"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
               >
-                {isAuthenticated && user ? (
-                  <Image
-                    src="/assets/admin/img/user2-160x160.jpg"
-                    alt="Profile"
-                    width={32}
-                    height={32}
-                    className="profile-img"
-                  />
-                ) : (
-                  <FaUser className="profile-icon" />
-                )}
+              <FaUserShield className="profile-icon"/>
               </button>
               {isProfileOpen && (
                 <div className="dropdown-content">

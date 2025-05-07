@@ -71,7 +71,7 @@ function AdminList() {
         <h1>Quản Lý Admin</h1>
         <div>
           <Link href="/analytics" className="btn btn-primary me-2">
-            <FaChartBar /> Phân Tích Doanh Thu
+            <FaChartBar /> Thống kê
           </Link>
           <Link href="/admin/profile" className="btn btn-secondary me-2">
             <FaUser /> Thông tin cá nhân

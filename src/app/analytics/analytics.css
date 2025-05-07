@@ -65,8 +65,8 @@
 /* Stats summary section */
 .stats-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.8rem;
   margin-bottom: 2rem;
 }
 
@@ -352,4 +352,9 @@
   background-color: white;
   border-bottom: 1px solid #e2e8f0;
   padding: 1.25rem 1.5rem;
+}
+
+/* Revenue & Orders Chart specific styling */
+#revenue-orders-chart {
+  height: 500px;
 } 

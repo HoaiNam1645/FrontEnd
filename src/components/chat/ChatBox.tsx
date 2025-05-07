@@ -10,6 +10,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
 import { getApiUrl } from '@/config/api';
+import React from 'react';
 
 const ChatBoxContainer = styled(Box)(({ theme }) => ({
   position: 'fixed',
@@ -61,6 +62,8 @@ const MessageContainer = styled(Box)(({ theme }) => ({
   overflowY: 'auto',
   padding: theme.spacing(3),
   backgroundColor: theme.palette.background.default,
+  willChange: 'transform',
+  contain: 'content',
   '&::-webkit-scrollbar': {
     width: '6px',
   },
@@ -90,6 +93,10 @@ const Message = styled(Box)(({ theme, role }) => ({
   backgroundColor: role === 'user' ? theme.palette.primary.main : theme.palette.grey[100],
   color: role === 'user' ? theme.palette.primary.contrastText : theme.palette.text.primary,
   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+  position: 'relative',
+  transition: 'none',
+  transform: 'translateZ(0)',
+  WebkitFontSmoothing: 'antialiased',
   '& a': {
     textDecoration: 'none',
     color: theme.palette.primary.main,
@@ -137,6 +144,40 @@ const Message = styled(Box)(({ theme, role }) => ({
       },
     },
   },
+  '& .product-list': {
+    backgroundColor: '#f8f9fa',
+    border: '1px solid #e0e0e0',
+    borderRadius: theme.spacing(1.5),
+    padding: theme.spacing(2),
+    marginTop: theme.spacing(1.5),
+    marginBottom: theme.spacing(1),
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(1),
+    boxShadow: '0 2px 5px rgba(0,0,0,0.06)',
+    position: 'relative',
+    '&::before': {
+      content: '""',
+      position: 'absolute',
+      top: '-4px',
+      left: 0,
+      right: 0,
+      height: '4px',
+      background: 'linear-gradient(90deg, #3f51b5, #f50057)',
+      borderRadius: '4px 4px 0 0',
+    },
+  },
+  '& .product-item': {
+    padding: theme.spacing(1.5),
+    borderRadius: theme.spacing(1),
+    backgroundColor: '#fff',
+    border: '1px solid #eaeaea',
+    marginBottom: theme.spacing(1),
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    '&:last-child': {
+      marginBottom: 0,
+    }
+  },
   '& .product-link': {
     display: 'inline-flex',
     alignItems: 'center',
@@ -167,6 +208,10 @@ const Message = styled(Box)(({ theme, role }) => ({
         boxShadow: '0 4px 8px rgba(63, 81, 181, 0.4)',
       },
     },
+  },
+  '& b': {
+    fontWeight: 600,
+    color: '#e53935',
   },
   '& .emoji': {
     fontSize: '1.25rem',
@@ -366,41 +411,53 @@ export default function ChatBox() {
         let formattedContent = response.data.data;
         
         if (formattedContent.includes('href="/product-left-sidebar/')) {
-          // Wrap the entire content in a product recommendation div
-          formattedContent = `<div class="product-recommendation">${formattedContent}</div>`;
-          
-          // Convert the plain 🛒 emoji to a styled span
-          formattedContent = formattedContent.replace('🛒', '<span class="emoji">🛒</span>');
-          
-          // Make the product link more attractive
-          formattedContent = formattedContent.replace(
-            /<a href="(\/product-left-sidebar\/[^"]+)"[^>]*><span class="emoji">🛒<\/span>\s*<strong>([^<]+)<\/strong><\/a>/g,
-            '<a href="$1" class="product-link" target="_blank"><span class="emoji">🛒</span> <strong>$2</strong></a>'
-          );
+          // Check if it's a product list format
+          if (formattedContent.includes('<div class="product-list">')) {
+            // Already formatted as product list, just enhance the styling
+            formattedContent = formattedContent.replace(/🛒/g, '<span class="emoji">🛒</span>');
+            
+            // Style all product links more attractively
+            formattedContent = formattedContent.replace(
+              /<a href="(\/product-left-sidebar\/[^"]+)"[^>]*><span class="emoji">🛒<\/span>\s*<strong>([^<]+)<\/strong><\/a>/g,
+              '<a href="$1" class="product-link" target="_blank"><span class="emoji">🛒</span> <strong>$2</strong></a>'
+            );
+          } else {
+            // Wrap the entire content in a product recommendation div
+            formattedContent = `<div class="product-recommendation">${formattedContent}</div>`;
+            
+            // Convert the plain 🛒 emoji to a styled span
+            formattedContent = formattedContent.replace('🛒', '<span class="emoji">🛒</span>');
+            
+            // Make the product link more attractive
+            formattedContent = formattedContent.replace(
+              /<a href="(\/product-left-sidebar\/[^"]+)"[^>]*><span class="emoji">🛒<\/span>\s*<strong>([^<]+)<\/strong><\/a>/g,
+              '<a href="$1" class="product-link" target="_blank"><span class="emoji">🛒</span> <strong>$2</strong></a>'
+            );
 
-          // Highlight price information
-          formattedContent = formattedContent.replace(
-            /(\d+(\.\d+)?\s*(triệu|nghìn|đồng))/g, 
-            '<span class="price-info">$1</span>'
-          );
+            // Highlight price information
+            formattedContent = formattedContent.replace(
+              /(\d+(\.\d+)?\s*(triệu|nghìn|đồng))/g, 
+              '<span class="price-info">$1</span>'
+            );
 
-          // Style additional product details
-          formattedContent = formattedContent.replace(
-            /(còn \d+ sản phẩm)/g,
-            '<span class="product-detail">$1</span>'
-          );
+            // Style additional product details
+            formattedContent = formattedContent.replace(
+              /(còn \d+ sản phẩm)/g,
+              '<span class="product-detail">$1</span>'
+            );
 
-          // Add more styling for product category
-          formattedContent = formattedContent.replace(
-            /(trong danh mục ([^\.]+))/g,
-            'trong danh mục <strong>$2</strong>'
-          );
+            // Add more styling for product category
+            formattedContent = formattedContent.replace(
+              /(trong danh mục ([^\.]+))/g,
+              'trong danh mục <strong>$2</strong>'
+            );
 
-          // Style emoji at the end
-          formattedContent = formattedContent.replace(
-            /(📱🛍️)/g,
-            '<span class="emoji">$1</span>'
-          );
+            // Style emoji at the end
+            formattedContent = formattedContent.replace(
+              /(📱🛍️)/g,
+              '<span class="emoji">$1</span>'
+            );
+          }
         }
         
         const botMessage: ChatMessage = {
@@ -426,6 +483,43 @@ export default function ChatBox() {
   const createMarkup = (html: string) => {
     return { __html: html };
   };
+
+  // Memoize the messages to prevent unnecessary re-renders
+  const memoizedMessages = React.useMemo(() => {
+    return messages.map((message) => (
+      <MessageWrapper key={message._id} className={message.role === 'user' ? 'user' : ''}>
+        <Avatar 
+          sx={{ 
+            width: 36,
+            height: 36,
+            bgcolor: message.role === 'user' ? 'primary.main' : 'secondary.main',
+          }}
+        >
+          {message.role === 'user' ? <PersonIcon /> : <SmartToyIcon />}
+        </Avatar>
+        <Message role={message.role}>
+          {message.role === 'user' ? (
+            <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
+              {message.content}
+            </Typography>
+          ) : (
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                wordBreak: 'break-word',
+                minHeight: '1.5em',
+                '& > div': { 
+                  transformStyle: 'preserve-3d',
+                  backfaceVisibility: 'hidden'
+                }
+              }}
+              dangerouslySetInnerHTML={createMarkup(message.content)}
+            />
+          )}
+        </Message>
+      </MessageWrapper>
+    ));
+  }, [messages]);
 
   if (userRole !== 'user') {
     return null;
@@ -463,32 +557,7 @@ export default function ChatBox() {
                 </Typography>
               </Box>
             ) : (
-              messages.map((message) => (
-                <MessageWrapper key={message._id} className={message.role === 'user' ? 'user' : ''}>
-                  <Avatar 
-                    sx={{ 
-                      width: 36,
-                      height: 36,
-                      bgcolor: message.role === 'user' ? 'primary.main' : 'secondary.main',
-                    }}
-                  >
-                    {message.role === 'user' ? <PersonIcon /> : <SmartToyIcon />}
-                  </Avatar>
-                  <Message role={message.role}>
-                    {message.role === 'user' ? (
-                      <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
-                        {message.content}
-                      </Typography>
-                    ) : (
-                      <Typography 
-                        variant="body2" 
-                        sx={{ wordBreak: 'break-word' }}
-                        dangerouslySetInnerHTML={createMarkup(message.content)}
-                      />
-                    )}
-                  </Message>
-                </MessageWrapper>
-              ))
+              memoizedMessages
             )}
             
             {/* Typing indicator */}

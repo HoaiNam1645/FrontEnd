@@ -121,7 +121,7 @@ function AnalyticsPage() {
     const options = {
       chart: {
         type: 'bar',
-        height: 400,
+        height: 500,
         stacked: false,
         toolbar: {
           show: true,
@@ -306,7 +306,7 @@ function AnalyticsPage() {
                 options={getChartOptions()}
                 series={getChartSeries()}
                 type="bar"
-                height={400}
+                height={500}
               />
             </div>
           ) : (
