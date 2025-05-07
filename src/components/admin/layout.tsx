@@ -112,7 +112,7 @@ export default function AdminLayout({
 
       <nav className="top-nav">
         <div className="nav-left">
-          <Link href="/" className="nav-brand">
+          <Link href="/admin" className="nav-brand">
             <Image
               src="/assets/admin/img/AdminLTELogo.png"
               alt="Logo"
@@ -131,10 +131,10 @@ export default function AdminLayout({
           </button>
 
           <div className={`nav-links ${isMobileMenuOpen ? 'show' : ''}`}>
-            <Link href="/dashboard" className={`nav-link ${pathname === '/dashboard' ? 'active' : ''}`}>
+            {/* <Link href="/admin" className={`nav-link ${pathname === '/admin' ? 'active' : ''}`}>
               <FaHome />
               <span>Trang Chủ</span>
-            </Link>
+            </Link> */}
             <Link href="/analytics" className={`nav-link ${pathname === '/analytics' ? 'active' : ''}`}>
               <FaChartBar />
               <span>Thống kê</span>

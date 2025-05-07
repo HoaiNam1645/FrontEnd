@@ -214,6 +214,15 @@
   background-color: #e2e3e5;
   color: #383d41;
 }
+.status-badge {
+  background-color: #f8d7da;
+  color: #721c24;
+
+}
+/* .status-badge.cancelled {
+  background-color: #f8d7da;
+  color: #721c24;
+} */
 
 /* Status buttons */
 .status-btn {

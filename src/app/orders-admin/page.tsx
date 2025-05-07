@@ -304,6 +304,7 @@ function OrdersList() {
                                 <option value="processing">Đang xử lý</option>
                                 <option value="shipped">Đã gửi hàng</option>
                                 <option value="completed">Hoàn thành</option>
+                                <option value="cancelled">Đã hủy</option>
                               </select>
                               <Link 
                                 href={`/orders-admin/view/${order._id}`}
