@@ -1,43 +1,53 @@
 "use client";
 import { Fade } from "react-awesome-reveal";
-import { Col, Row } from "react-bootstrap";
+import { Col, Row, Container } from "react-bootstrap";
 import ScrollButton from "../../button/ScrollButton";
-import useSWR from "swr";
-import fetcher from "@/components/fetcher-api/Fetcher";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { useRouter, usePathname } from "next/navigation";
 import { setSelectedCategory } from "@/store/reducers/filterReducer";
-import { useState } from "react";
-import { slice } from "lodash";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import Link from "next/link";
 
-function Footer({ onSuccess = () => {}, onError = () => {} }) {
+interface Category {
+  _id: string;
+  name: string;
+  image_url: string;
+}
+
+function Footer() {
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useDispatch();
-  const [dropdownState, setDropdownState] = useState(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const { selectedCategory } = useSelector((state: RootState) => state.filter);
-  const { data, error } = useSWR(`/api/shopcategory`, fetcher, {
-    onSuccess,
-    onError,
-  });
 
-  if (error) return <div>Failed to load categories</div>;
-  if (!data) return <div></div>;
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get("http://localhost:5001/api/categories/getAll");
+        setCategories(response.data.data);
+        setError(false);
+      } catch (err) {
+        console.error("Failed to load categories:", err);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const getData = () => {
-    return data.length > 8 ? slice(data, 0, 8) : data;
+    fetchCategories();
+  }, []);
+
+  const getDisplayCategories = () => {
+    return categories.length > 8 ? categories.slice(0, 8) : categories;
   };
 
-  const toggleDropdown = (dropdown: any) => {
-    setDropdownState((menu) => (menu === dropdown ? null : dropdown));
-  };
-
-  const CategoryData = getData();
-
-  const handleCategoryChange = (category) => {
+  const handleCategoryChange = (category: string) => {
     const updatedCategory = selectedCategory.includes(category)
       ? selectedCategory.filter((cat) => cat !== category)
       : [...selectedCategory, category];
@@ -50,207 +60,182 @@ function Footer({ onSuccess = () => {}, onError = () => {} }) {
     return null;
   }
 
+  if (loading) return <div className="loading-placeholder"></div>;
+  if (error) return <div className="error-message">Failed to load categories</div>;
+
+  const displayCategories = getDisplayCategories();
+
   return (
     <>
-      <footer className="gi-footer m-t-40">
-        <div className="footer-container">
-          <div className="footer-top padding-tb-60">
-            <div className="container">
-              <Row className="justify-content-between">
-                <Col sm={12} lg={5}>
-                  <Fade
-                    duration={400}
-                    triggerOnce
-                    direction="up"
-                    className="gi-footer-cat"
-                  >
-                    <div className="gi-footer-widget">
-                      <h4
-                        onClick={() => toggleDropdown("category")}
-                        className="gi-footer-heading"
-                      >
-                        Danh mục sản phẩm
-                        <div className="gi-heading-res">
-                          <i
-                            className="fi-rr-angle-small-down"
-                            aria-hidden="true"
-                          ></i>
-                        </div>
-                      </h4>
-                      <motion.div
-                        className="gi-footer-links gi-footer-dropdown"
-                        initial={{ height: 0, opacity: 0, translateY: -20 }}
-                        animate={{
-                          height: dropdownState === "category" ? "auto" : 0,
-                          opacity: dropdownState === "category" ? 1 : 0,
-                          translateY: dropdownState === "category" ? 0 : -20,
-                        }}
-                        transition={{ duration: 0.3, ease: "easeInOut" }}
-                        style={{
-                          overflow: "hidden",
-                          display: "block",
-                          paddingBottom:
-                            dropdownState === "category" ? "20px" : "0px",
-                        }}
-                      >
-                        <Row>
-                          {CategoryData.map((data, index) => (
-                            <Col xs={6} md={4} key={index}>
-                              <div className="gi-footer-link">
-                                <a
-                                  style={{ textTransform: "capitalize" }}
-                                  href="#"
-                                  onClick={() =>
-                                    handleCategoryChange(data.category)
-                                  }
-                                >
-                                  {data.category}
-                                </a>
-                              </div>
-                            </Col>
-                          ))}
-                        </Row>
-                      </motion.div>
-                    </div>
-                  </Fade>
-                </Col>
-                
-                <Col sm={12} lg={5} className="gi-footer-cont-social">
-                  <Fade
-                    duration={400}
-                    triggerOnce
-                    direction="up"
-                    delay={200}
-                  >
-                    <div className="gi-footer-contact">
-                      <div className="gi-footer-widget">
-                        <h4
-                          onClick={() => toggleDropdown("contact")}
-                          className="gi-footer-heading"
-                        >
-                          Liên hệ với chúng tôi
-                          <div className="gi-heading-res">
-                            <i
-                              className="fi-rr-angle-small-down"
-                              aria-hidden="true"
-                            ></i>
-                          </div>
-                        </h4>
-                        <motion.div
-                          className="gi-footer-links gi-footer-dropdown"
-                          initial={{ height: 0, opacity: 0, translateY: -20 }}
-                          animate={{
-                            height: dropdownState === "contact" ? "auto" : 0,
-                            opacity: dropdownState === "contact" ? 1 : 0,
-                            translateY: dropdownState === "contact" ? 0 : -20,
-                          }}
-                          transition={{ duration: 0.3, ease: "easeInOut" }}
-                          style={{
-                            overflow: "hidden",
-                            display: "block",
-                            paddingBottom:
-                              dropdownState === "contact" ? "20px" : "0px",
-                          }}
-                        >
-                          <ul className="align-itegi-center">
-                            <li className="gi-footer-link gi-foo-location">
-                              <span>
-                                <i className="fi fi-rr-marker location svg_img foo_svg"></i>
-                              </span>
-                              <p>
-                                Vinmar Center 268 Tô Hiến Thành, P.15, Q.10, TP.HCM
-                              </p>
-                            </li>
-                            <li className="gi-footer-link gi-foo-call">
-                              <span>
-                                <i className="fi fi-brands-whatsapp svg_img foo_svg"></i>
-                              </span>
-                              <a href="tel:+84377556677">+84 377 556 677</a>
-                            </li>
-                            <li className="gi-footer-link gi-foo-mail">
-                              <span>
-                                <i className="fi fi-rr-envelope"></i>
-                              </span>
-                              <a href="mailto:support@webshop.vn">
-                                support@webshop.vn
-                              </a>
-                            </li>
-                          </ul>
-                        </motion.div>
-                      </div>
-                    </div>
-                    <div className="gi-footer-social mt-4">
-                      <div className="gi-footer-widget">
-                        <motion.div
-                          className="gi-footer-links"
-                          style={{
-                            display: "block",
-                          }}
-                        >
-                          <ul className="align-itegi-center d-flex">
-                            <li className="gi-footer-link">
-                              <a href="#">
-                                <i
-                                  className="gicon gi-facebook"
-                                  aria-hidden="true"
-                                ></i>
-                              </a>
-                            </li>
-                            <li className="gi-footer-link">
-                              <a href="#">
-                                <i
-                                  className="gicon gi-twitter"
-                                  aria-hidden="true"
-                                ></i>
-                              </a>
-                            </li>
-                            <li className="gi-footer-link">
-                              <a href="#">
-                                <i
-                                  className="gicon gi-linkedin"
-                                  aria-hidden="true"
-                                ></i>
-                              </a>
-                            </li>
-                            <li className="gi-footer-link">
-                              <a href="#">
-                                <i
-                                  className="gicon gi-instagram"
-                                  aria-hidden="true"
-                                ></i>
-                              </a>
-                            </li>
-                          </ul>
-                        </motion.div>
-                      </div>
-                    </div>
-                  </Fade>
-                </Col>
+      <footer className="gi-footer mt-5 pt-5 pb-3">
+        <Container>
+          <Row className="mb-5">
+            <Col lg={6}>
+              <h5 className="footer-title mb-4">Danh Mục Sản Phẩm</h5>
+              <Row>
+                {displayCategories.map((category) => (
+                  <Col xs={6} sm={4} key={category._id} className="mb-3">
+                    <a
+                      className="footer-link"
+                      href="#"
+                      onClick={() => handleCategoryChange(category.name)}
+                    >
+                      {category.name}
+                    </a>
+                  </Col>
+                ))}
               </Row>
-            </div>
-          </div>
-          <div className="footer-bottom">
-            <div className="container">
-              <div className="row">
-                <div className="gi-bottom-info">
-                  <div className="footer-copy">
-                    <div className="footer-bottom-copy ">
-                      <div className="gi-copy">
-                        Copyright ©{" "}
-                        <Link className="site-name" href="/">
-                          WebShop{" "}
-                        </Link>
-                        all rights reserved. 2024.
-                      </div>
+            </Col>
+            
+            <Col lg={6}>
+              <div className="ps-lg-5">
+                <h5 className="footer-title mb-4">Liên Hệ Với Chúng Tôi</h5>
+                <ul className="contact-list">
+                  <li className="d-flex mb-3">
+                    <div className="icon-wrapper me-3">
+                      <i className="fi fi-rr-marker"></i>
                     </div>
-                  </div>
+                    <div>
+                      Vinmar Center 268 Tô Hiến Thành, P.15, Q.10, TP.HCM
+                    </div>
+                  </li>
+                  <li className="d-flex mb-3">
+                    <div className="icon-wrapper me-3">
+                      <i className="fi fi-brands-whatsapp"></i>
+                    </div>
+                    <a href="tel:+84377556677">+84 377 556 677</a>
+                  </li>
+                  <li className="d-flex mb-3">
+                    <div className="icon-wrapper me-3">
+                      <i className="fi fi-rr-envelope"></i>
+                    </div>
+                    <a href="mailto:support@webshop.vn">support@webshop.vn</a>
+                  </li>
+                </ul>
+
+                <h5 className="footer-title mt-5 mb-4">Kết Nối Với Chúng Tôi</h5>
+                <div className="social-icons">
+                  <a href="#" className="me-3">
+                    <i className="gicon gi-facebook"></i>
+                  </a>
+                  <a href="#" className="me-3">
+                    <i className="gicon gi-twitter"></i>
+                  </a>
+                  <a href="#" className="me-3">
+                    <i className="gicon gi-linkedin"></i>
+                  </a>
+                  <a href="#" className="me-3">
+                    <i className="gicon gi-instagram"></i>
+                  </a>
                 </div>
               </div>
-            </div>
+            </Col>
+          </Row>
+          
+          <div className="footer-bottom text-center py-3 mt-4 border-top">
+            <p className="mb-0">
+              Copyright © <Link className="site-name" href="/">WebShop</Link> all rights reserved. 2024.
+            </p>
           </div>
-        </div>
+        </Container>
       </footer>
       <ScrollButton />
+      
+      <style jsx global>{`
+        .gi-footer {
+          background-color: #f8f9fa;
+        }
+        
+        .footer-title {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: #333;
+          text-transform: capitalize;
+        }
+        
+        .footer-link {
+          color: #555;
+          text-decoration: none;
+          text-transform: capitalize;
+          display: block;
+          transition: color 0.2s;
+        }
+        
+        .footer-link:hover {
+          color: #007bff;
+        }
+        
+        .contact-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+        
+        .contact-list a {
+          color: #555;
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+        
+        .contact-list a:hover {
+          color: #007bff;
+        }
+        
+        .icon-wrapper {
+          width: 24px;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          color: #555;
+        }
+        
+        .social-icons a {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 38px;
+          height: 38px;
+          background: rgba(0, 0, 0, 0.05);
+          border-radius: 50%;
+          color: #555;
+          transition: all 0.3s ease;
+        }
+        
+        .social-icons a:hover {
+          background: #007bff;
+          color: white;
+          transform: translateY(-3px);
+        }
+        
+        .footer-bottom {
+          color: #777;
+        }
+        
+        .site-name {
+          color: #007bff;
+          text-decoration: none;
+        }
+        
+        .loading-placeholder {
+          height: 200px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .error-message {
+          color: #dc3545;
+          text-align: center;
+          padding: 20px;
+        }
+        
+        @media (max-width: 991px) {
+          .ps-lg-5 {
+            padding-left: 0 !important;
+            margin-top: 2rem;
+          }
+        }
+      `}</style>
     </>
   );
 }

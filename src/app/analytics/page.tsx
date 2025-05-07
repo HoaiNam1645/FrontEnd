@@ -51,7 +51,8 @@ function AnalyticsPage() {
   // Initialize with current month's start and end dates
   useEffect(() => {
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    // Set start date to January 1, 2025
+    const firstDay = new Date(2025, 0, 1);
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     
     setStartDate(firstDay.toISOString().split('T')[0]);

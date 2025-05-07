@@ -106,7 +106,15 @@ function HeaderTwo({ cartItems, wishlistItems }) {
 
   const handleClickOutside = () => {
     setShowSearchResults(false);
+    setSearchInput(''); // Clear search input when clicking outside
   };
+
+  useEffect(() => {
+    // Reset search input on page refresh
+    return () => {
+      setSearchInput('');
+    };
+  }, []);
 
   useEffect(() => {
     // Add click event listener to detect clicks outside search results
@@ -162,7 +170,9 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                     onSubmit={handleSubmit}
                     className="gi-search-group-form"
                     action="#"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
                   >
                     <input
                       className="form-control gi-search-bar"
@@ -180,7 +190,9 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                 {showSearchResults && searchResults.length > 0 && (
                   <div 
                     className="search-results-dropdown" 
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
                     style={{
                       position: 'absolute',
                       top: 'calc(100% + 5px)',
