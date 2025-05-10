@@ -353,24 +353,6 @@ function HeaderTwo({ cartItems, wishlistItems }) {
                   </div>
                   {/* <!-- Header User End -->
                                 <!-- Header wishlist Start --> */}
-                  <Link
-                    href="/wishlist"
-                    className="gi-header-btn gi-wish-toggle gi-header-rtl-btn"
-                    title="Yêu thích"
-                  >
-                    <div className="header-icon">
-                      <i className="fi-rr-heart"></i>
-                    </div>
-                    <div className="gi-btn-desc">
-                      <span className="gi-btn-title">Yêu thích</span>
-                      <span className="gi-btn-stitle">
-                        <b className="gi-wishlist-count">
-                          {wishlistItems.length}
-                        </b>
-                        {wishlistItems.length > 0 && " sản phẩm"}
-                      </span>
-                    </div>
-                  </Link>
                   {/* <!-- Header wishlist End -->
                                 <!-- Header Cart Start --> */}
                   <Link

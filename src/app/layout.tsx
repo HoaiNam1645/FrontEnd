@@ -2,6 +2,7 @@ import "./globals.css";
 
 import Providers from "@/store/Provider";
 import { Loader } from "@/components/loader";
+import AuthHandler from "./_app";
 
 interface RootLayoutProps {
   children: React.ReactNode;
@@ -22,7 +23,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body style={{ background: "none" }}>
         <Loader>
           <Providers>
-            <div>{children}</div>
+            <AuthHandler>
+              <div>{children}</div>
+            </AuthHandler>
           </Providers>
         </Loader>
       </body>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
 import { removeItem, fetchUserCartAsync, removeCartItemAsync, fetchCartFromAPI } from "../../store/reducers/cartSlice";
@@ -25,12 +25,28 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
   const [subTotal, setSubTotal] = useState(0);
   const [vat, setVat] = useState(0);
   const dispatch = useDispatch<AppDispatch>();
+  
+  // Thêm tham chiếu cho interval refresh sử dụng number thay vì NodeJS.Timeout
+  const refreshIntervalRef = useRef<number | null>(null);
 
   // Lấy giỏ hàng từ API khi người dùng đã đăng nhập
   useEffect(() => {
     if (isAuthenticated && user?._id && isCartOpen) {
       dispatch(fetchCartFromAPI(user._id));
+      
+      // Thiết lập interval để làm mới giỏ hàng mỗi 10 giây khi sidebar mở
+      refreshIntervalRef.current = window.setInterval(() => {
+        dispatch(fetchCartFromAPI(user._id));
+      }, 10000);
     }
+    
+    // Clear interval khi component unmount hoặc khi sidebar đóng
+    return () => {
+      if (refreshIntervalRef.current) {
+        window.clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
   }, [isAuthenticated, user, isCartOpen, dispatch]);
 
   useEffect(() => {
@@ -193,11 +209,19 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
                 </table>
               </div>
               <div className="cart_btn">
-                <Link href="/cart" className="gi-btn-1" onClick={closeCart}>
+                <Link 
+                  href="/cart" 
+                  className="gi-btn-1" 
+                  onClick={closeCart}
+                  style={{ 
+                    display: 'block', 
+                    margin: '0 auto', 
+                    textAlign: 'center', 
+                    width: '100%',
+                    maxWidth: '200px' 
+                  }}
+                >
                   Xem giỏ hàng
-                </Link>
-                <Link href="/checkout" className="gi-btn-2" onClick={closeCart}>
-                  Thanh toán
                 </Link>
               </div>
             </div>

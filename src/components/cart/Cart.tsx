@@ -14,7 +14,14 @@ import { productService, Product } from "../../services/productService";
 import { AppDispatch } from "../../store";
 import { CreateOrderRequest, OrderItemRequest, CartItem } from "../../services/cartService";
 import { useRouter } from "next/navigation";
-import { showSuccessToast } from "../toast-popup/Toastify";
+import { showSuccessToast, showErrorToast } from "../toast-popup/Toastify";
+import { Modal } from "../modal/Modal";
+import { toast } from "react-toastify";
+
+// Thêm hàm showWarningToast vì nó chưa được export từ file Toastify
+const showWarningToast = (message: string) => {
+  toast.warning(message);
+};
 
 const Cart = ({
   onSuccess = () => {},
@@ -35,6 +42,10 @@ const Cart = ({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [address, setAddress] = useState('');
   const router = useRouter();
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalContent, setModalContent] = useState({ title: '', message: '', onConfirm: () => {} });
   
   // Lấy user ID từ localStorage khi component mount
   useEffect(() => {
@@ -58,7 +69,7 @@ const Cart = ({
         if (!token) {
           console.log('Token không tồn tại hoặc đã hết hạn');
           // Thông báo cho người dùng đăng nhập lại
-          alert('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
+          showWarningToast('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
           // Có thể chuyển hướng đến trang đăng nhập
           return;
         }
@@ -69,9 +80,9 @@ const Cart = ({
         console.error('Lỗi khi lấy giỏ hàng:', error);
         // Hiển thị thông báo lỗi cụ thể
         if (error.response && error.response.status === 401) {
-          alert('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
+          showWarningToast('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
         } else {
-          alert('Có lỗi xảy ra khi tải giỏ hàng, vui lòng thử lại sau');
+          showErrorToast('Có lỗi xảy ra khi tải giỏ hàng, vui lòng thử lại sau');
         }
       }
     };
@@ -104,23 +115,24 @@ const Cart = ({
   const total = subTotal + vat - discountAmount;
 
   const handleRemoveFromCart = (item: CartItem) => {
-    // Xác nhận trước khi xóa
-    const isConfirmed = window.confirm(`Bạn có chắc muốn xóa sản phẩm "${item.name}" khỏi giỏ hàng?`);
-    
-    if (!isConfirmed) {
-      return;
-    }
-    
-    console.log('Xóa sản phẩm với cartItemId:', item._id);
-    
-    dispatch(removeCartItemAsync(item._id))
-      .unwrap()
-      .then(() => {
-        alert("Xóa sản phẩm khỏi giỏ hàng thành công!");
-      })
-      .catch((error) => {
-        alert(error || "Có lỗi xảy ra khi xóa sản phẩm");
-      });
+    // Mở modal xác nhận thay vì window.confirm
+    setModalContent({
+      title: 'Xác nhận xóa',
+      message: `Bạn có chắc muốn xóa sản phẩm "${item.name}" khỏi giỏ hàng?`,
+      onConfirm: () => {
+        
+        dispatch(removeCartItemAsync(item._id))
+          .unwrap()
+          .then(() => {
+            setIsModalOpen(false);
+          })
+          .catch((error) => {
+            showErrorToast(error || "Có lỗi xảy ra khi xóa sản phẩm");
+            setIsModalOpen(false);
+          });
+      }
+    });
+    setIsModalOpen(true);
   };
 
   useEffect(() => {
@@ -145,25 +157,25 @@ const Cart = ({
     e.preventDefault();
     
     if (!recipientName || !phoneNumber || !address) {
-      alert("Vui lòng nhập đầy đủ thông tin giao hàng!");
+      showWarningToast("Vui lòng nhập đầy đủ thông tin giao hàng!");
       return;
     }
     
     if (cartItems.length === 0) {
-      alert("Giỏ hàng của bạn đang trống!");
+      showWarningToast("Giỏ hàng của bạn đang trống!");
       return;
     }
     
     // Lấy thông tin người dùng từ localStorage
     const userInfoStr = localStorage.getItem('login_user');
     if (!userInfoStr) {
-      alert('Bạn cần đăng nhập để tạo đơn hàng');
+      showWarningToast('Bạn cần đăng nhập để tạo đơn hàng');
       return;
     }
     
     const userInfo = JSON.parse(userInfoStr);
     if (!userInfo || !userInfo.id) {
-      alert('Không tìm thấy ID người dùng');
+      showErrorToast('Không tìm thấy ID người dùng');
       return;
     }
     
@@ -190,11 +202,12 @@ const Cart = ({
       .unwrap()
       .then(() => {
         // Chuyển hướng đến trang xác nhận đơn hàng hoặc trang chủ
+        showSuccessToast('Đơn hàng đã được tạo thành công!');
         router.push('/order-success');
       })
       .catch((error) => {
         console.error('Lỗi khi tạo đơn hàng:', error);
-        alert(`Đã xảy ra lỗi khi tạo đơn hàng: ${error}`);
+        showErrorToast(`Đã xảy ra lỗi khi tạo đơn hàng: ${error}`);
       });
   };
 
@@ -208,6 +221,17 @@ const Cart = ({
 
   return (
     <>
+      {/* Modal component for confirmations */}
+      {isModalOpen && (
+        <Modal 
+          title={modalContent.title}
+          message={modalContent.message}
+          onConfirm={modalContent.onConfirm}
+          onCancel={() => setIsModalOpen(false)}
+          isOpen={isModalOpen}
+        />
+      )}
+      
       <section className="gi-cart-section padding-tb-40">
         <h2 className="d-none">Cart Page</h2>
         <div className="container">

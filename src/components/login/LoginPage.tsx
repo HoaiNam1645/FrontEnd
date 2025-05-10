@@ -9,6 +9,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { login } from "@/store/reducers/registrationSlice";
 import { RootState } from "@/store";
 import axios from "axios";
+import { FaGoogle } from "react-icons/fa";
 
 const LoginPage = () => {
   // Always declare all hooks at the top level
@@ -25,6 +26,7 @@ const LoginPage = () => {
 
   // Check for authentication
   useEffect(() => {
+    // Kiểm tra nếu đã đăng nhập
     if (isAuthenticated) {
       const userRoleStr = localStorage.getItem('login_user');
       const userRole = userRoleStr ? JSON.parse(userRoleStr).role : null;
@@ -95,6 +97,20 @@ const LoginPage = () => {
     } catch (error: any) {
       console.error("Login error:", error.response?.data?.message || "Đăng nhập thất bại");
       showErrorToast(error.response?.data?.message || "Đăng nhập thất bại");
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      // Lưu URL hiện tại để sau khi đăng nhập xong quay lại
+      const currentOrigin = window.location.origin;
+      const callbackUrl = `${currentOrigin}/auth/google-callback`;
+      
+      // Redirect to Google OAuth endpoint
+      window.location.href = `http://localhost:5001/api/auth/google?redirect_uri=${encodeURIComponent(callbackUrl)}`;
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      showErrorToast("Đăng nhập Google thất bại");
     }
   };
 
@@ -175,6 +191,17 @@ const LoginPage = () => {
                           Đăng nhập
                         </button>
                       </span>
+                      <div className="mt-3 text-center">
+                        <p className="mb-2">Hoặc đăng nhập với</p>
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger"
+                          onClick={handleGoogleLogin}
+                        >
+                          <FaGoogle className="me-2" />
+                          Đăng nhập với Google
+                        </button>
+                      </div>
                     </Form>
                   </div>
                 </div>
