@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -8,6 +8,7 @@ import axios from "axios";
 import "../../news.css";
 import { ClipLoader } from 'react-spinners';
 import Link from 'next/link';
+import { FaArrowLeft } from 'react-icons/fa';
 
 interface NewsItem {
   _id: string;
@@ -33,6 +34,9 @@ const EditNews = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchNewsItem = async () => {
@@ -51,6 +55,11 @@ const EditNews = () => {
             imageUrl: newsData.imageUrl || "",
             author: newsData.author || ""
           });
+          
+          // Set image preview if image URL exists
+          if (newsData.imageUrl) {
+            setPreviewUrl(newsData.imageUrl);
+          }
         } else {
           setError("Không thể tải thông tin tin tức");
           toast.error("Không thể tải thông tin tin tức");
@@ -77,6 +86,23 @@ const EditNews = () => {
     });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      setSelectedFile(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setSelectedFile(null);
+      // Reset to original image URL if available
+      setPreviewUrl(formData.imageUrl || null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -95,22 +121,29 @@ const EditNews = () => {
         return;
       }
 
-      if (!formData.imageUrl.trim()) {
-        toast.error("Vui lòng nhập URL hình ảnh");
-        setIsLoading(false);
-        return;
+      // Create FormData to handle file upload
+      const submitData = new FormData();
+      submitData.append("title", formData.title);
+      submitData.append("content", formData.content);
+      submitData.append("author", formData.author || "");
+      
+      // If there's a file selected, append it to the FormData
+      if (selectedFile) {
+        submitData.append("image", selectedFile);
+      } else if (formData.imageUrl) {
+        // If no file but URL provided, use the URL
+        submitData.append("imageUrl", formData.imageUrl);
       }
 
-      if (!formData.author.trim()) {
-        toast.error("Vui lòng nhập tên tác giả");
-        setIsLoading(false);
-        return;
-      }
-
-      // Submit form
-      const response = await axios.put(
+      // Submit form with FormData
+      const response = await axios.post(
         `http://localhost:5001/api/news/update/${id}`,
-        formData
+        submitData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
       );
 
       if (response.data.success) {
@@ -131,8 +164,9 @@ const EditNews = () => {
 
   if (isFetching) {
     return (
-      <div className="p-4 flex justify-center items-center min-h-[60vh]">
-        <ClipLoader color="#123abc" size={50} />
+      <div className="loading-spinner">
+        <ClipLoader color="#4299e1" size={50} />
+        <p>Đang tải thông tin tin tức...</p>
       </div>
     );
   }
@@ -167,91 +201,127 @@ const EditNews = () => {
         theme="light"
         style={{ marginTop: '60px' }}
       />
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Chỉnh Sửa Tin Tức</h1>
-          <Link href="/news">
-            <button className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600">
-              Quay lại danh sách tin tức
-            </button>
+      <div className="news-form-container">
+        <div className="page-header">
+          <h1>Chỉnh Sửa Tin Tức</h1>
+          <Link href="/news" className="btn btn-secondary">
+            <FaArrowLeft /> Quay lại danh sách
           </Link>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <form onSubmit={handleSubmit} className="form">
-            <div className="form-group">
-              <label htmlFor="title">Tiêu Đề <span className="required">*</span></label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="Nhập tiêu đề tin tức"
-                required
-              />
-            </div>
+        <div className="card">
+          <div className="card-body">
+            <form onSubmit={handleSubmit} className="form" encType="multipart/form-data">
+              <div className="form-group">
+                <label htmlFor="title">Tiêu Đề <span className="required">*</span></label>
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="Nhập tiêu đề tin tức"
+                  required
+                />
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="content">Nội Dung <span className="required">*</span></label>
-              <textarea
-                id="content"
-                name="content"
-                value={formData.content}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="Nhập nội dung tin tức"
-                rows={8}
-                required
-              ></textarea>
-            </div>
+              <div className="form-group">
+                <label htmlFor="content">Nội Dung <span className="required">*</span></label>
+                <textarea
+                  id="content"
+                  name="content"
+                  value={formData.content}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="Nhập nội dung tin tức"
+                  rows={8}
+                  required
+                ></textarea>
+              </div>
 
-            <div className="form-group">
-              <label htmlFor="imageUrl">URL Hình Ảnh <span className="required">*</span></label>
-              <input
-                type="text"
-                id="imageUrl"
-                name="imageUrl"
-                value={formData.imageUrl}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="Nhập URL hình ảnh"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="author">Tác Giả <span className="required">*</span></label>
-              <input
-                type="text"
-                id="author"
-                name="author"
-                value={formData.author}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="Nhập tên tác giả"
-                required
-              />
-            </div>
-
-            <div className="form-actions">
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <ClipLoader color="#ffffff" size={20} className="mr-2" />
-                    Đang xử lý...
-                  </>
-                ) : (
-                  "Cập Nhật Tin Tức"
+              <div className="form-group">
+                <label htmlFor="image">Hình Ảnh</label>
+                <div className="file-upload-container">
+                  <input
+                    type="file"
+                    id="image"
+                    name="image"
+                    onChange={handleFileChange}
+                    className="form-control"
+                    accept="image/*"
+                    ref={fileInputRef}
+                  />
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Chọn Tệp
+                  </button>
+                  <span className="file-name">
+                    {selectedFile ? selectedFile.name : "Sử dụng ảnh hiện tại hoặc chọn ảnh mới"}
+                  </span>
+                </div>
+                {previewUrl && (
+                  <div className="image-preview">
+                    <img src={previewUrl} alt="Preview" />
+                  </div>
                 )}
-              </button>
-            </div>
-          </form>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="imageUrl">Hoặc URL Hình Ảnh</label>
+                <input
+                  type="text"
+                  id="imageUrl"
+                  name="imageUrl"
+                  value={formData.imageUrl}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="Nhập URL hình ảnh (nếu không tải lên tệp)"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="author">Tác Giả <span className="required">*</span></label>
+                <input
+                  type="text"
+                  id="author"
+                  name="author"
+                  value={formData.author}
+                  onChange={handleChange}
+                  className="form-control"
+                  placeholder="Nhập tên tác giả"
+                  required
+                />
+              </div>
+
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => router.push("/news")}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <ClipLoader color="#ffffff" size={20} className="mr-2" />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    "Cập Nhật Tin Tức"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </>

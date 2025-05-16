@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -16,6 +16,9 @@ export default function CreateNews() {
     author: ""
   });
   const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -23,6 +26,22 @@ export default function CreateNews() {
       ...formData,
       [name]: value
     });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      setSelectedFile(file);
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setSelectedFile(null);
+      setPreviewUrl(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,10 +62,29 @@ export default function CreateNews() {
         return;
       }
 
-      // Submit form
+      // Create FormData to handle file upload
+      const submitData = new FormData();
+      submitData.append("title", formData.title);
+      submitData.append("content", formData.content);
+      submitData.append("author", formData.author || "");
+      
+      // If there's a file selected, append it to the FormData
+      if (selectedFile) {
+        submitData.append("image", selectedFile);
+      } else if (formData.imageUrl) {
+        // If no file but URL provided, use the URL
+        submitData.append("imageUrl", formData.imageUrl);
+      }
+
+      // Submit form with FormData
       const response = await axios.post(
         "http://localhost:5001/api/news/create",
-        formData
+        submitData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
       );
 
       if (response.data.success) {
@@ -87,7 +125,7 @@ export default function CreateNews() {
 
         <div className="card">
           <div className="card-body">
-            <form onSubmit={handleSubmit} className="form">
+            <form onSubmit={handleSubmit} className="form" encType="multipart/form-data">
               <div className="form-group">
                 <label htmlFor="title">Tiêu Đề <span className="required">*</span></label>
                 <input
@@ -117,7 +155,37 @@ export default function CreateNews() {
               </div>
 
               <div className="form-group">
-                <label htmlFor="imageUrl">URL Hình Ảnh</label>
+                <label htmlFor="image">Hình Ảnh</label>
+                <div className="file-upload-container">
+                  <input
+                    type="file"
+                    id="image"
+                    name="image"
+                    onChange={handleFileChange}
+                    className="form-control"
+                    accept="image/*"
+                    ref={fileInputRef}
+                  />
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Chọn Tệp
+                  </button>
+                  <span className="file-name">
+                    {selectedFile ? selectedFile.name : "Chưa chọn tệp nào"}
+                  </span>
+                </div>
+                {previewUrl && (
+                  <div className="image-preview">
+                    <img src={previewUrl} alt="Preview" />
+                  </div>
+                )}
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="imageUrl">Hoặc URL Hình Ảnh</label>
                 <input
                   type="text"
                   id="imageUrl"
@@ -125,9 +193,9 @@ export default function CreateNews() {
                   value={formData.imageUrl}
                   onChange={handleChange}
                   className="form-control"
-                  placeholder="Nhập URL hình ảnh"
+                  placeholder="Nhập URL hình ảnh (nếu không tải lên tệp)"
                 />
-                {formData.imageUrl && (
+                {formData.imageUrl && !previewUrl && (
                   <div className="image-preview">
                     <img src={formData.imageUrl} alt="Preview" />
                   </div>
