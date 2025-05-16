@@ -9,6 +9,7 @@ import { Product } from "@/services/productService";
 import Spinner from "../button/Spinner";
 import { AppDispatch } from "@/store";
 import { CartItem } from "@/services/cartService";
+import ConfirmModal from "../modal/ConfirmModal";
 
 interface User {
   _id: string;
@@ -24,6 +25,8 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
   
   const [subTotal, setSubTotal] = useState(0);
   const [vat, setVat] = useState(0);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [itemToRemove, setItemToRemove] = useState<CartItem | null>(null);
   const dispatch = useDispatch<AppDispatch>();
   
   // Thêm tham chiếu cho interval refresh sử dụng number thay vì NodeJS.Timeout
@@ -72,20 +75,17 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
   };
 
   const handleRemoveFromCart = (item: CartItem) => {
-    // Xác nhận trước khi xóa
-    const isConfirmed = window.confirm(`Bạn có chắc muốn xóa sản phẩm "${item.name}" khỏi giỏ hàng?`);
-    
-    if (!isConfirmed) {
-      return;
-    }
-    
-    console.log('Xóa sản phẩm với cartItemId:', item._id);
+    setItemToRemove(item);
+    setShowConfirmModal(true);
+  };
+
+  const confirmRemoveItem = () => {
+    if (!itemToRemove) return;
     
     if (isAuthenticated) {
-      dispatch(removeCartItemAsync(item._id))
+      dispatch(removeCartItemAsync(itemToRemove._id))
         .unwrap()
         .then(() => {
-          showSuccessToast("Xóa sản phẩm khỏi giỏ hàng thành công!");
         })
         .catch((error: any) => {
           showSuccessToast(error || "Có lỗi xảy ra khi xóa sản phẩm", {
@@ -94,12 +94,24 @@ const SidebarCart = ({ closeCart, isCartOpen }: any) => {
           });
         });
     } else {
-      dispatch(removeItem(item._id));
+      dispatch(removeItem(itemToRemove._id));
     }
+    setShowConfirmModal(false);
+    setItemToRemove(null);
   };
 
   return (
     <>
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onCancel={() => {
+          setShowConfirmModal(false);
+          setItemToRemove(null);
+        }}
+        onConfirm={confirmRemoveItem}
+        title="Xác nhận xóa"
+        message={`Bạn có chắc muốn xóa sản phẩm "${itemToRemove?.name}" khỏi giỏ hàng?`}
+      />
       {isCartOpen && (
         <div
           style={{ display: isCartOpen ? "block" : "none" }}

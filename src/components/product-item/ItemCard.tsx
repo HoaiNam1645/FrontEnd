@@ -239,16 +239,6 @@ const ItemCard = ({ data }: ItemCardProps) => {
               </span>
               <div className="gi-pro-actions">
                 <button
-                  onClick={() => handleWishlist(data)}
-                  className={
-                    "gi-btn-group wishlist " +
-                    (isInWishlist(data) ? "active" : "")
-                  }
-                  title="Yêu thích"
-                >
-                  <i className="fi-rr-heart"></i>
-                </button>
-                <button
                   className="gi-btn-group quickview gi-cart-toggle"
                   data-link-action="quickview"
                   title="Xem nhanh"
@@ -257,16 +247,6 @@ const ItemCard = ({ data }: ItemCardProps) => {
                   onClick={handleShow}
                 >
                   <i className="fi-rr-eye"></i>
-                </button>
-                <button
-                  onClick={() => handleCompareItem(data)}
-                  className={
-                    "gi-btn-group compare " +
-                    (isInCompare(data) ? "active" : "")
-                  }
-                  title="So sánh"
-                >
-                  <i className="fi fi-rr-arrows-repeat"></i>
                 </button>
                 <button
                   title="Thêm vào giỏ hàng"

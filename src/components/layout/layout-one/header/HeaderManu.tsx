@@ -45,6 +45,89 @@ function HeaderManu() {
   const [products, setProducts] = useState<{ [key: string]: Product[] }>({});
   const [loading, setLoading] = useState(true);
 
+  // Add custom styles
+  const styles = {
+    categoryToggle: {
+      backgroundColor: '#f8f9fa',
+      padding: '12px 20px',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      transition: 'all 0.3s ease',
+      '&:hover': {
+        backgroundColor: '#e9ecef',
+      }
+    },
+    categoryName: {
+      fontSize: '14px',
+      fontWeight: 500,
+      color: '#333',
+    },
+    productItem: {
+      display: 'flex',
+      alignItems: 'center',
+      padding: '8px 12px',
+      borderRadius: '6px',
+      transition: 'all 0.2s ease',
+      '&:hover': {
+        backgroundColor: '#f8f9fa',
+      }
+    },
+    productImage: {
+      width: '40px',
+      height: '40px',
+      objectFit: 'cover' as const,
+      borderRadius: '4px',
+      marginRight: '12px',
+    },
+    productName: {
+      fontSize: '13px',
+      color: '#555',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    },
+    categoryTitle: {
+      fontSize: '16px',
+      fontWeight: 600,
+      color: '#333',
+      marginBottom: '15px',
+      paddingBottom: '8px',
+      borderBottom: '2px solid #f0f0f0',
+    },
+    tabButton: {
+      padding: '12px 20px',
+      marginBottom: '8px',
+      borderRadius: '6px',
+      border: 'none',
+      backgroundColor: 'transparent',
+      transition: 'all 0.3s ease',
+      width: '100%',
+      textAlign: 'left' as const,
+      position: 'relative' as const,
+      '&:hover': {
+        backgroundColor: '#f8f9fa',
+      },
+      '&.active': {
+        backgroundColor: '#e9ecef',
+        fontWeight: 500,
+        color: '#000',
+        '&::before': {
+          content: '""',
+          position: 'absolute' as const,
+          left: 0,
+          top: 0,
+          height: '100%',
+          width: '4px',
+          backgroundColor: '#007bff',
+          borderRadius: '2px'
+        }
+      }
+    }
+  };
+
   if (pathname === '/login' || pathname === '/register') {
     return null;
   }
@@ -137,16 +220,20 @@ function HeaderManu() {
                                 aria-controls={`v-pills-${category._id}`}
                                 aria-selected={selectedIndex === index}
                                 style={{
-                                  padding: "10px 50px 10px 20px",
-                                  marginBottom: "10px",
+                                  ...styles.tabButton,
+                                  padding: "12px 20px",
+                                  marginBottom: "8px",
                                   whiteSpace: "nowrap",
                                   overflow: "hidden",
                                   textOverflow: "ellipsis",
-                                  maxWidth: "200px"
+                                  maxWidth: "250px",
+                                  backgroundColor: selectedIndex === index ? '#e9ecef' : 'transparent',
+                                  fontWeight: selectedIndex === index ? 500 : 400,
+                                  color: selectedIndex === index ? '#000' : '#333',
+                                  borderLeft: selectedIndex === index ? '4px solid #007bff' : 'none',
                                 }}
                               >
-                                <i className="fi-rr-cupcake"></i>
-                                <span className="category-name">{category.name}</span>
+                                <span className="category-name" style={styles.categoryName}>{category.name}</span>
                               </button>
                             </Tab>
                           ))
@@ -165,19 +252,18 @@ function HeaderManu() {
                           >
                             <div className="tab-list row">
                               <div className="col">
-                                <h6 className="gi-col-title">{category.name}</h6>
-                                <ul className="cat-list">
+                                <h6 className="gi-col-title" style={styles.categoryTitle}>{category.name}</h6>
+                                <ul className="cat-list" style={{ listStyle: 'none', padding: 0 }}>
                                   {products[category._id]?.map((product) => (
-                                    <li key={product._id}>
-                                      <Link href={`/shop-left-sidebar-col-3?productId=${product._id}`}>
-                                        <div className="product-item">
+                                    <li key={product._id} style={{ marginBottom: '8px' }}>
+                                      <Link href={`/product-left-sidebar/${product._id}`} style={{ textDecoration: 'none' }}>
+                                        <div className="product-item" style={styles.productItem}>
                                           <img 
                                             src={product.image_url} 
                                             alt={product.name}
-                                            style={{ width: '30px', height: '30px', marginRight: '10px' }}
+                                            style={styles.productImage}
                                           />
-                                          <span>{product.name}</span>
-                                          <span className="price">{product.price.toLocaleString('vi-VN')}đ</span>
+                                          <span style={styles.productName}>{product.name}</span>
                                         </div>
                                       </Link>
                                     </li>

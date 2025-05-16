@@ -279,6 +279,7 @@ export default function CreateUser() {
                 >
                   <option value="user">Người dùng</option>
                   <option value="admin">Quản trị viên</option>
+                  <option value="supper_admin">Siêu Quản trị viên</option>
                 </select>
               </div>
 

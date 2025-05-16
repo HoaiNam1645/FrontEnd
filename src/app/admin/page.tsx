@@ -6,6 +6,9 @@ import { FaEdit, FaTrash, FaEye, FaPlus, FaKey, FaUser, FaChartBar } from "react
 import "./admin.css";
 import axios from "axios";
 import AdminRoute from "@/components/protected-route/AdminRoute";
+import { showSuccessToast, showErrorToast } from "@/components/toast-popup/Toastify";
+import Toastify from "@/components/toast-popup/Toastify";
+import ConfirmModal from "@/components/modal/ConfirmModal";
 
 interface Admin {
   _id: string;
@@ -38,6 +41,8 @@ const listAdmin = async () => {
 function AdminList() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedAdminId, setSelectedAdminId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAdmins = async () => {
@@ -47,26 +52,56 @@ function AdminList() {
     fetchAdmins();
   }, []);
 
-  const handleDelete = async (_id: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa admin này không?')) {
-      try {
-        const token = localStorage.getItem("login_token");
-        await axios.delete(`http://localhost:5001/api/users/delete/${_id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setAdmins(admins.filter(admin => admin._id !== _id));
-        alert('Xóa admin thành công!');
-      } catch (error) {
-        console.error('Lỗi khi xóa admin:', error);
-        alert('Có lỗi xảy ra khi xóa admin!');
+  const confirmDelete = (_id: string) => {
+    setSelectedAdminId(_id);
+    setShowConfirmModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedAdminId) return;
+    
+    try {
+      const token = localStorage.getItem("login_token");
+      const response = await axios.delete(`http://localhost:5001/api/users/delete/${selectedAdminId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (response.data.success) {
+        setAdmins(admins.filter(admin => admin._id !== selectedAdminId));
+        showSuccessToast('Xóa admin thành công!');
+      } else {
+        showErrorToast(response.data.message || 'Có lỗi xảy ra khi xóa admin!');
       }
+    } catch (error) {
+      console.error('Lỗi khi xóa admin:', error);
+      if (error.response && error.response.data && error.response.data.message) {
+        showErrorToast(error.response.data.message);
+      } else {
+        showErrorToast('Có lỗi xảy ra khi xóa admin!');
+      }
+    } finally {
+      setShowConfirmModal(false);
+      setSelectedAdminId(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmModal(false);
+    setSelectedAdminId(null);
   };
 
   return (
     <div className="admin-list-container">
+      <Toastify />
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title="Xác nhận xóa"
+        message="Bạn có chắc chắn muốn xóa admin này không?"
+        onConfirm={handleDelete}
+        onCancel={cancelDelete}
+      />
       <div className="page-header">
         <h1>Quản Lý Admin</h1>
         <div>
@@ -140,7 +175,7 @@ function AdminList() {
                           <FaKey />
                         </Link>
                         <button
-                          onClick={() => handleDelete(admin._id)}
+                          onClick={() => confirmDelete(admin._id)}
                           className="btn btn-icon btn-danger"
                           title="Xóa"
                         >

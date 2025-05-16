@@ -5,6 +5,9 @@ import Link from "next/link";
 import { FaEdit, FaTrash, FaEye, FaPlus } from "react-icons/fa";
 import axios from "axios";
 import "./user.css";
+import ConfirmModal from "@/components/modal/ConfirmModal";
+import { showSuccessToast, showErrorToast } from "@/components/toast-popup/Toastify";
+import Toastify from "@/components/toast-popup/Toastify";
 
 interface User {
   _id: string;
@@ -32,6 +35,8 @@ const listUsers = async () => {
 export default function UserList() {
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -41,22 +46,43 @@ export default function UserList() {
     fetchUsers();
   }, []);
 
-  const handleDelete = async (_id: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này không?')) {
-      try {
-        await axios.delete(`http://localhost:5001/api/users/delete/${_id}`);
-        // Cập nhật danh sách users sau khi xóa thành công
-        setUsers(users.filter(user => user._id !== _id));
-        alert('Xóa người dùng thành công!');
-      } catch (error) {
-        console.error('Lỗi khi xóa người dùng:', error);
-        alert('Có lỗi xảy ra khi xóa người dùng!');
-      }
+  const confirmDelete = (_id: string) => {
+    setSelectedUserId(_id);
+    setShowConfirmModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedUserId) return;
+    
+    try {
+      await axios.delete(`http://localhost:5001/api/users/delete/${selectedUserId}`);
+      // Cập nhật danh sách users sau khi xóa thành công
+      setUsers(users.filter(user => user._id !== selectedUserId));
+      showSuccessToast('Xóa người dùng thành công!');
+    } catch (error) {
+      console.error('Lỗi khi xóa người dùng:', error);
+      showErrorToast('Có lỗi xảy ra khi xóa người dùng!');
+    } finally {
+      setShowConfirmModal(false);
+      setSelectedUserId(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmModal(false);
+    setSelectedUserId(null);
   };
 
   return (
     <div className="user-list-container">
+      <Toastify />
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title="Xác nhận xóa"
+        message="Bạn có chắc chắn muốn xóa người dùng này không?"
+        onConfirm={handleDelete}
+        onCancel={cancelDelete}
+      />
       <div className="page-header">
         <h1>Quản Lý Người Dùng</h1>
         <Link href="/user/create" className="btn btn-primary">
@@ -120,7 +146,7 @@ export default function UserList() {
                         </Link>
                         <button
                           key={`delete-${user._id}`}
-                          onClick={() => handleDelete(user._id)}
+                          onClick={() => confirmDelete(user._id)}
                           className="btn btn-icon btn-danger"
                           title="Xóa"
                         >

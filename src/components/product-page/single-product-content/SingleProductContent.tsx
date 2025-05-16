@@ -120,7 +120,36 @@ const SingleProductContent = ({
       return;
     }
 
+    // Kiểm tra số lượng trong kho trước khi thêm vào giỏ hàng
+    if (productData.stock <= 0) {
+      showSuccessToast("Sản phẩm đã hết hàng!", {
+        icon: false,
+        type: "error"
+      });
+      return;
+    }
+
     const isItemInCart = cartItems.some((item) => item._id === productData._id);
+    
+    // Kiểm tra xem có thể thêm số lượng này vào giỏ hàng không
+    if (isItemInCart) {
+      const existingItem = cartItems.find((item) => item._id === productData._id);
+      const newQuantity = existingItem ? existingItem.quantity + quantity : quantity;
+      
+      if (newQuantity > productData.stock) {
+        showSuccessToast(`Chỉ còn ${productData.stock} sản phẩm trong kho. Hiện bạn đã có ${existingItem?.quantity} sản phẩm trong giỏ hàng.`, {
+          icon: false,
+          type: "warning"
+        });
+        return;
+      }
+    } else if (quantity > productData.stock) {
+      showSuccessToast(`Chỉ còn ${productData.stock} sản phẩm trong kho.`, {
+        icon: false,
+        type: "warning"
+      });
+      return;
+    }
 
     if (!isItemInCart) {
       // Sử dụng API khi đã đăng nhập
@@ -132,7 +161,12 @@ const SingleProductContent = ({
       .unwrap()
       .then(() => {
         // Cập nhật UI sau khi API thành công
-        dispatch(addItem({ ...productData, quantity: quantity }));
+        dispatch(addItem({ 
+          ...productData, 
+          quantity: quantity,
+          userId: user.id,
+          productId: productData._id 
+        }));
         showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
       })
       .catch((error) => {
@@ -184,42 +218,17 @@ const SingleProductContent = ({
           {isSliderInitialized && (
             <Col lg={5} md={12} className="single-pro-img text-center">
               <div className="single-product-scroll" style={{ maxWidth: "90%", margin: "0 auto" }}>
-                <Slider
-                  {...slider1Settings}
-                  ref={(slider) => (slider1.current = slider)}
-                  className="single-product-cover"
-                  style={{ maxWidth: "400px", margin: "0 auto" }}
-                >
-                  {getProductImages().map((item: any, index: any) => (
-                    <div
-                      key={index}
-                      className="single-slide zoom-image-hover"
-                      onClick={() => handleSlider1Click(index)}
-                      style={{ maxHeight: "400px", display: "flex", justifyContent: "center", alignItems: "center" }}
-                    >
-                      <ZoomImage
-                        src={item.image}
-                        alt="" 
-                      />
-                    </div>
-                  ))}
-                </Slider>
-                <Slider
-                  {...slider2Settings}
-                  ref={(slider) => (slider2.current = slider)}
-                  className="single-nav-thumb"
-                  style={{ marginTop: "10px" }}
-                >
-                  {getProductImages().map((item: any, index: number) => (
-                    <div
-                      key={index}
-                      className="single-slide"
-                      onClick={() => handleSlider2Click(index)}
-                    >
-                      <img className="img-responsive" src={item.image} alt="" />
-                    </div>
-                  ))}
-                </Slider>
+                <div className="single-product-cover" style={{ maxWidth: "400px", margin: "0 auto" }}>
+                  <div
+                    className="single-slide zoom-image-hover"
+                    style={{ maxHeight: "400px", display: "flex", justifyContent: "center", alignItems: "center" }}
+                  >
+                    <ZoomImage
+                      src={productData?.image_url || ''}
+                      alt={productData?.name || ''} 
+                    />
+                  </div>
+                </div>
               </div>
             </Col>
           )}
@@ -311,7 +320,12 @@ const SingleProductContent = ({
               </div>
               <div className="gi-single-qty">
                 <div className="qty-plus-minus">
-                  <QuantitySelector setQuantity={setQuantity} quantity={quantity} id={data.id} />
+                  <QuantitySelector 
+                    setQuantity={setQuantity} 
+                    quantity={quantity} 
+                    id={data.id}
+                    productId={productData?._id} 
+                  />
                 </div>
                 <div className="gi-single-cart">
                   <button 
@@ -321,23 +335,6 @@ const SingleProductContent = ({
                   >
                     Thêm vào giỏ hàng
                   </button>
-                </div>
-                <div className="gi-single-wishlist">
-                  <a className="gi-btn-group wishlist" title="Yêu thích">
-                    <i className="fi-rr-heart"></i>
-                  </a>
-                </div>
-                <div className="gi-single-quickview">
-                  <a
-                    href="#"
-                    className="gi-btn-group quickview"
-                    data-link-action="quickview"
-                    title="Xem nhanh"
-                    data-bs-toggle="modal"
-                    data-bs-target="#gi_quickview_modal"
-                  >
-                    <i className="fi-rr-eye"></i>
-                  </a>
                 </div>
               </div>
             </div>

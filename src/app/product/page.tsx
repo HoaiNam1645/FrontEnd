@@ -8,6 +8,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import "./product.css";
 import axios from "axios";
 import { useSearchParams } from 'next/navigation';
+import ConfirmModal from "@/components/modal/ConfirmModal";
 
 interface Product {
   _id: string;
@@ -50,7 +51,9 @@ const ProductList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const searchParams = useSearchParams();
-  const categoryId = searchParams.get('categoryId');
+  const categoryId = searchParams ? searchParams.get('categoryId') : null;
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,17 +72,30 @@ const ProductList = () => {
     fetchData();
   }, []);
 
-  const handleDelete = async (_id: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?')) {
-      try {
-        await axios.delete(`http://localhost:5001/api/products/delete/${_id}`);
-        setProducts(products.filter(product => product._id !== _id));
-        toast.success('Xóa sản phẩm thành công!');
-      } catch (error) {
-        console.error('Lỗi khi xóa sản phẩm:', error);
-        toast.error('Có lỗi xảy ra khi xóa sản phẩm!');
-      }
+  const confirmDelete = (_id: string) => {
+    setSelectedProductId(_id);
+    setShowConfirmModal(true);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedProductId) return;
+    
+    try {
+      await axios.delete(`http://localhost:5001/api/products/delete/${selectedProductId}`);
+      setProducts(products.filter(product => product._id !== selectedProductId));
+      toast.success('Xóa sản phẩm thành công!');
+    } catch (error) {
+      console.error('Lỗi khi xóa sản phẩm:', error);
+      toast.error('Có lỗi xảy ra khi xóa sản phẩm!');
+    } finally {
+      setShowConfirmModal(false);
+      setSelectedProductId(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowConfirmModal(false);
+    setSelectedProductId(null);
   };
 
   const getCategoryName = (categoryId: string) => {
@@ -115,7 +131,13 @@ const ProductList = () => {
         draggable
         pauseOnHover
         theme="light"
-        style={{ marginTop: '60px' }}
+      />
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        title="Xác nhận xóa"
+        message="Bạn có chắc chắn muốn xóa sản phẩm này không?"
+        onConfirm={handleDelete}
+        onCancel={cancelDelete}
       />
       <div className="product-list-container">
         <div className="page-header">
@@ -180,7 +202,7 @@ const ProductList = () => {
                             <FaEdit />
                           </Link>
                           <button
-                            onClick={() => handleDelete(product._id)}
+                            onClick={() => confirmDelete(product._id)}
                             className="btn btn-icon btn-danger"
                             title="Xóa"
                           >
@@ -198,6 +220,6 @@ const ProductList = () => {
       </div>
     </>
   );
-}
+};
 
 export default ProductList; 

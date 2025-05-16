@@ -1,5 +1,6 @@
 import { ToastContainer, ToastOptions, toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
+import './Toastify.css'; // Import our custom CSS
 
 const Toastify = () => {
   return (
@@ -13,6 +14,8 @@ const Toastify = () => {
         pauseOnFocusLoss
         draggable
         pauseOnHover
+        autoClose={3000}
+        theme="light"
       />
     </>
   );
@@ -23,12 +26,15 @@ export const showToast = (message: string, options?: ToastOptions) => {
 };
 
 export const showSuccessToast = (message: string, options?: ToastOptions) => {
-  toast.success(message, options);
+  toast.success(message, { ...options });
 };
 
 export const showErrorToast = (message: string, options?: ToastOptions) => {
-  console.log("fhdhf");
-  toast.error(message, options);
+  toast.error(message, { ...options });
+};
+
+export const showWarningToast = (message: string, options?: ToastOptions) => {
+  toast.warning(message, { ...options });
 };
 
 export default Toastify;

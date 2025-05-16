@@ -2,84 +2,105 @@ import { useEffect, useState } from "react";
 import Modal from "react-bootstrap/Modal";
 import StarRating from "../stars/StarRating";
 import { useDispatch, useSelector } from "react-redux";
-import { addItem, updateItemQuantity } from "../../store/reducers/cartSlice";
+import { addToCartAsync, fetchCartFromAPI } from "../../store/reducers/cartSlice";
 import { Fade } from "react-awesome-reveal";
 import { Col, Row } from "react-bootstrap";
 import QuantitySelector from "../quantity-selector/QuantitySelector";
-import { RootState } from "../../store";
+import { RootState, AppDispatch } from "@/store";
 import { showSuccessToast } from "../toast-popup/Toastify";
 import ZoomImage from "@/components/zoom-image/ZoomImage";
-import SizeOptions from "../product-item/SizeOptions";
+import { Product } from "@/services/productService";
+import { API_DOMAIN } from "@/components/shop-sidebar/Shop";
 
-interface Item {
-  id: number;
-  title: string;
-  newPrice: number;
-  waight: string;
-  image: string;
-  imageTwo: string;
-  date: string;
-  status: string;
-  rating: number;
-  oldPrice: number;
-  location: string;
-  brand: string;
-  sku: number;
-  category: string;
-  quantity: number;
+interface QuickViewModalProps {
+  show: boolean;
+  handleClose: () => void;
+  data: Product;
 }
 
-interface Option {
-  value: string;
-  tooltip: string;
-}
-
-const QuickViewModal = ({ show, handleClose, data }) => {
-  const dispatch = useDispatch();
-  const cartItems = useSelector((state: RootState) => state.cart.items);
+const QuickViewModal = ({ show, handleClose, data }: QuickViewModalProps) => {
+  const dispatch = useDispatch<AppDispatch>();
   const [quantity, setQuantity] = useState(1);
+  const isAuthenticated = useSelector((state: RootState) => state.registration.isAuthenticated);
+  const user = useSelector((state: RootState) => state.registration.user);
 
-  const options: Option[] = [
-    { value: "250g", tooltip: "Small" },
-    { value: "500g", tooltip: "Medium" },
-    { value: "1kg", tooltip: "Large" },
-    { value: "2kg", tooltip: "Extra Large" },
-  ];
+  // Lấy số lượng sản phẩm trong giỏ hàng hiện tại
+  const cartItems = useSelector((state: RootState) => state.cart.items);
+  const currentCartQuantity = cartItems.find(item => item.productId === data._id)?.quantity || 0;
 
-  useEffect(() => {
-    if (cartItems.length === 0) {
+  // Kiểm tra số lượng có thể thêm vào giỏ hàng
+  const availableQuantity = data.stock - currentCartQuantity;
+
+  const getImageUrl = (url: string | undefined) => {
+    if (!url) return '/assets/img/product-images/1_1.jpg';
+    
+    if (url.startsWith('http')) {
+      return url;
+    }
+    
+    if (url.startsWith('/')) {
+      return `${API_DOMAIN}${url}`;
+    }
+    
+    return `${API_DOMAIN}/${url}`;
+  };
+
+  // Cập nhật số lượng khi thay đổi
+  const handleQuantityChange = (newQuantity: number) => {
+    if (newQuantity > availableQuantity) {
+      showSuccessToast(`Chỉ còn ${availableQuantity} sản phẩm trong kho!`, {
+        icon: false,
+        type: "warning"
+      });
+      return;
+    }
+    setQuantity(newQuantity);
+  };
+
+  const handleCart = () => {
+    if (!isAuthenticated) {
+      showSuccessToast("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!", {
+        icon: false,
+        type: "error"
+      });
       return;
     }
 
-    const subtotal = cartItems.reduce(
-      (acc, item) => acc + item.newPrice * item.quantity,
-      0
-    );
-  }, [cartItems]);
-
-  const handleCart = (data: Item) => {
-    const isItemInCart = cartItems.some((item: Item) => item.id === data.id);
-
-    if (!isItemInCart) {
-      dispatch(addItem({ ...data, quantity: quantity }));
-      showSuccessToast("Add product in Cart Successfully!", {
+    const userId = user?.id || user?._id;
+    if (!userId) {
+      showSuccessToast("Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại!", {
         icon: false,
+        type: "error"
       });
-    } else {
-      const updatedCartItems = cartItems.map((item: Item) =>
-        item.id === data.id
-          ? {
-              ...item,
-              quantity: item.quantity + quantity,
-              price: item.newPrice + data.newPrice,
-            } // Increment quantity and update price
-          : item
-      );
-      dispatch(updateItemQuantity(updatedCartItems));
-      showSuccessToast("Add product in Cart Successfully!", {
-        icon: false,
-      });
+      return;
     }
+
+    // Kiểm tra số lượng tồn kho
+    if (quantity > availableQuantity) {
+      showSuccessToast(`Chỉ còn ${availableQuantity} sản phẩm trong kho!`, {
+        icon: false,
+        type: "warning"
+      });
+      return;
+    }
+
+    dispatch(addToCartAsync({
+      userId: userId,
+      productId: data._id,
+      quantity: quantity
+    }))
+    .unwrap()
+    .then(() => {
+      dispatch(fetchCartFromAPI(userId));
+      showSuccessToast("Thêm sản phẩm vào giỏ hàng thành công!");
+      handleClose(); // Đóng modal sau khi thêm thành công
+    })
+    .catch((error) => {
+      showSuccessToast(error.message || "Có lỗi xảy ra khi thêm vào giỏ hàng", {
+        icon: false,
+        type: "error"
+      });
+    });
   };
 
   return (
@@ -91,7 +112,7 @@ const QuickViewModal = ({ show, handleClose, data }) => {
         keyboard={false}
         className="modal fade quickview-modal"
         id="gi_quickview_modal"
-        tabIndex="-1"
+        tabIndex={-1}
         role="dialog"
       >
         <div className="modal-dialog-centered" role="document">
@@ -105,13 +126,11 @@ const QuickViewModal = ({ show, handleClose, data }) => {
             ></button>
             <Modal.Body>
               <Row>
-                <Col md={5} sm={12} className=" mb-767">
+                <Col md={5} sm={12} className="mb-767">
                   <div className="single-pro-img single-pro-img-no-sidebar">
                     <div className="single-product-scroll">
-                      <div className={`single-slide zoom-image-hover`}>
-                        <>
-                          <ZoomImage src={data.image} alt="" />
-                        </>
+                      <div className="single-slide zoom-image-hover">
+                        <ZoomImage src={getImageUrl(data.image_url)} alt={data.name} />
                       </div>
                     </div>
                   </div>
@@ -119,65 +138,59 @@ const QuickViewModal = ({ show, handleClose, data }) => {
                 <Col md={7} sm={12}>
                   <div className="quickview-pro-content">
                     <h5 className="gi-quick-title">
-                      <a href="/product-left-sidebar">{data.title}</a>
+                      <a href={`/product-left-sidebar/${data._id}`}>{data.name}</a>
                     </h5>
                     <div className="gi-quickview-rating">
-                      <StarRating rating={data.rating} />
+                      <StarRating rating={data.ratingAverage || 0} />
+                      <span className="rating-info" style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        fontSize: '12px', 
+                        color: '#777', 
+                        marginLeft: '5px' 
+                      }}>
+                        {data?.ratingCount && data?.ratingCount > 0 ? `(${data.ratingCount} đánh giá)` : ''}
+                      </span>
                     </div>
 
                     <div className="gi-quickview-desc">
-                      Lorem Ipsum is simply dummy text of the printing and
-                      typesetting industry. Lorem Ipsum has been the industry`s
-                      standard dummy text ever since the 1900s,
+                      {data.description}
                     </div>
 
                     <div className="gi-quickview-price">
                       <span className="new-price">
-                        ${data.newPrice * data.quantity}
+                        {data.price ? data.price.toLocaleString('vi-VN') : '0'}đ
                       </span>
-                      <span className="old-price">${data.oldPrice}</span>
                     </div>
 
-                    <div className="gi-pro-variation">
-                      <div className="gi-pro-variation-inner gi-pro-variation-size gi-pro-size">
-                        <div className="gi-pro-variation-content">
-                          <SizeOptions
-                            categories={[
-                              "clothes",
-                              "footwear",
-                              "vegetables",
-                              "accessorise",
-                            ]}
-                            subCategory={data.category}
-                          />
-                          {/* <ul className="gi-opt-size">
-                            {options.map((data: any, index) => (
-                              <li key={index} onClick={() => handleClick(index)} className={activeIndex === index ? "active" : ""}>
-                                <a className="gi-opt-sz" data-tooltip={data.tooltip}>
-                                  {data.value}
-                                </a>
-                              </li>
-                            ))}
-                          </ul> */}
-                        </div>
-                      </div>
-                    </div>
                     <div className="gi-quickview-qty">
                       <div className="qty-plus-minus gi-qty-rtl">
                         <QuantitySelector
                           quantity={quantity}
-                          id={data.id}
-                          setQuantity={setQuantity}
+                          id={data._id}
+                          setQuantity={handleQuantityChange}
+                          maxQuantity={availableQuantity}
                         />
                       </div>
-                      <div className="gi-quickview-cart ">
+                      <div className="gi-quickview-cart">
                         <button
-                          onClick={() => handleCart(data)}
+                          onClick={handleCart}
                           className="gi-btn-1"
+                          disabled={availableQuantity <= 0}
                         >
-                          <i className="fi-rr-shopping-basket"></i> Add To Cart
+                          <i className="fi-rr-shopping-basket"></i> 
+                          {availableQuantity <= 0 ? 'Hết hàng' : 'Thêm vào giỏ hàng'}
                         </button>
                       </div>
+                      {availableQuantity > 0 && (
+                        <div className="stock-info" style={{ 
+                          fontSize: '12px', 
+                          color: '#666', 
+                          marginTop: '5px' 
+                        }}>
+                          Còn {availableQuantity} sản phẩm trong kho
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Col>

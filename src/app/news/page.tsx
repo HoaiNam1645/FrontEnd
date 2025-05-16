@@ -7,6 +7,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from "axios";
 import "./news.css";
+import ConfirmModal from "@/components/modal/ConfirmModal";
 
 interface NewsItem {
   _id: string;
@@ -32,6 +33,8 @@ export default function NewsList() {
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [newsToDelete, setNewsToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -50,15 +53,23 @@ export default function NewsList() {
   }, []);
 
   const handleDelete = async (_id: string) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa tin tức này không?')) {
-      try {
-        await axios.delete(`http://localhost:5001/api/news/delete/${_id}`);
-        setNewsItems(newsItems.filter(item => item._id !== _id));
-        toast.success('Xóa tin tức thành công!');
-      } catch (error) {
-        console.error('Lỗi khi xóa tin tức:', error);
-        toast.error('Có lỗi xảy ra khi xóa tin tức!');
-      }
+    setNewsToDelete(_id);
+    setShowConfirmModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!newsToDelete) return;
+    
+    try {
+      await axios.delete(`http://localhost:5001/api/news/delete/${newsToDelete}`);
+      setNewsItems(newsItems.filter(item => item._id !== newsToDelete));
+      toast.success('Xóa tin tức thành công!');
+    } catch (error) {
+      console.error('Lỗi khi xóa tin tức:', error);
+      toast.error('Có lỗi xảy ra khi xóa tin tức!');
+    } finally {
+      setShowConfirmModal(false);
+      setNewsToDelete(null);
     }
   };
 
@@ -76,6 +87,16 @@ export default function NewsList() {
         pauseOnHover
         theme="light"
         style={{ marginTop: '60px' }}
+      />
+      <ConfirmModal
+        isOpen={showConfirmModal}
+        onCancel={() => {
+          setShowConfirmModal(false);
+          setNewsToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Xác nhận xóa"
+        message="Bạn có chắc chắn muốn xóa tin tức này không?"
       />
       <div className="news-list-container">
         <div className="page-header">

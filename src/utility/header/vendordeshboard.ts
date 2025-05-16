@@ -16,11 +16,6 @@ const vendordeshboard: vendor[] = [
     slug: "cart"
   },
   {
-    name: "Thanh toán",
-    href: "/checkout",
-    slug: "checkout"
-  },
-  {
     name: "Theo dõi đơn hàng",
     href: "/track-order",
     slug: "track-order"

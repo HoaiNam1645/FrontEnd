@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FaHome, FaChartLine, FaUsers, FaUserShield, FaCog, FaBell, FaList, FaBox, FaSignOutAlt, FaSignInAlt, FaUser, FaChartBar, FaShoppingCart, FaBars } from "react-icons/fa";
+import { FaHome, FaChartLine, FaUsers, FaUserShield, FaCog, FaBell, FaList, FaBox, FaSignOutAlt, FaSignInAlt, FaUser, FaChartBar, FaShoppingCart, FaBars, FaNewspaper } from "react-icons/fa";
 import CategoryDropdown from "./CategoryDropdown";
 import "./admin.css";
 import { useSelector, useDispatch } from "react-redux";
@@ -155,6 +155,10 @@ export default function AdminLayout({
             <Link href="/product" className={`nav-link ${pathname === '/product' ? 'active' : ''}`}>
               <FaBox />
               <span>Sản Phẩm</span>
+            </Link>
+            <Link href="/news" className={`nav-link ${pathname === '/news' ? 'active' : ''}`}>
+              <FaNewspaper />
+              <span>Tin Tức</span>
             </Link>
           </div>
         </div>
