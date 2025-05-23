@@ -28,8 +28,8 @@ const UserRoute: React.FC<UserRouteProps> = ({ children }) => {
       return;
     }
 
-    // Nếu là admin, chuyển hướng đến trang admin
-    if (user && user.role === 'admin') {
+    // Nếu là admin hoặc supper_admin, chuyển hướng đến trang admin
+    if (user && (user.role === 'admin' || user.role === 'supper_admin')) {
       router.push('/admin');
       return;
     }

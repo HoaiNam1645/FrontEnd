@@ -34,14 +34,14 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
         return;
       }
       
-      if (user && user.role !== 'admin') {
-        console.log("AdminRoute - Not admin");
+      if (user && user.role !== 'admin' && user.role !== 'supper_admin') {
+        console.log("AdminRoute - Not admin or supper_admin");
         localStorage.setItem('redirectToHome', 'true');
         setIsAuthorized(false);
         return;
       }
       
-      console.log("AdminRoute - Admin role confirmed");
+      console.log("AdminRoute - Admin/Supper_Admin role confirmed");
       setIsAuthorized(true);
     };
     
