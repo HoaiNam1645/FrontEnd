@@ -31,7 +31,7 @@ const LoginPage = () => {
       const userRoleStr = localStorage.getItem('login_user');
       const userRole = userRoleStr ? JSON.parse(userRoleStr).role : null;
       
-      if (userRole === 'admin') {
+      if (userRole === 'admin' || userRole === 'supper_admin') {
         router.push("/admin");
       } else {
         router.push("/");
@@ -88,7 +88,7 @@ const LoginPage = () => {
         showSuccessToast("Đăng nhập thành công");
         
         // Navigate after login completes
-        if (user.role === 'admin') {
+        if (user.role === 'admin' || user.role === 'supper_admin') {
           router.push('/admin');
         } else {
           router.push('/');

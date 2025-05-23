@@ -44,14 +44,14 @@ export function redirectBasedOnRole() {
       return;
     }
     
-    // Người dùng đã đăng nhập nhưng không phải admin truy cập trang admin
-    if (isAuth && role !== 'admin' && currentPath.startsWith('/admin')) {
+    // Người dùng đã đăng nhập nhưng không phải admin hoặc supper_admin truy cập trang admin
+    if (isAuth && role !== 'admin' && role !== 'supper_admin' && currentPath.startsWith('/admin')) {
       window.location.href = '/';
       return;
     }
     
-    // Admin truy cập trang người dùng thông thường
-    if (isAuth && role === 'admin' && currentPath === '/user-profile') {
+    // Admin hoặc supper_admin truy cập trang người dùng thông thường
+    if (isAuth && (role === 'admin' || role === 'supper_admin') && currentPath === '/user-profile') {
       window.location.href = '/admin';
       return;
     }
@@ -68,7 +68,7 @@ export async function protectAdminRoute() {
       return;
     }
     
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'supper_admin') {
       window.location.href = '/';
       return;
     }
